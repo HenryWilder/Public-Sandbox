@@ -149,7 +149,6 @@ class ShaderID
 
 class CAGE
 {
-private:
 	static Color_t* colorRamp; // Array of grayscale values from which to sample
 	static unsigned int colorRamp_count; // Number of colors (gray values) in color ramp
 

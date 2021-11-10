@@ -1,12 +1,56 @@
 #include "Source.h"
 
-size_t Growable_Double(size_t currentSize)
+#ifdef USE_PRINT_PRINTF
+
+#include <stdio.h>
+
+void Print_Printf(const Color_t* str)
 {
-	return currentSize > 0 ? currentSize : 1;
+	printf(str);
 }
-size_t Growable_Increment(size_t currentSize)
+
+void SetCursor_Printf(size_t x, size_t y)
 {
-	return 1;
+	printf("\x1b[%i;%if", y, x);
+}
+
+#define Print Print_Printf
+#define SetCursor SetCursor_Printf
+
+#else
+
+#ifdef USE_PRINT_COUT
+
+#include <iostream>
+
+void Print_Cout(const Color_t* str)
+{
+	std::cout << str;
+}
+
+void SetCursor_Cout(size_t x, size_t y)
+{
+	std::cout << "\x1b[" << y << ';' << x << 'f';
+}
+
+#define Print Print_Cout
+#define SetCursor SetCursor_Cout
+
+#else
+
+#define Print CUSTOM_PRINT_NAME_PRINT
+#define SetCursor CUSTOM_PRINT_NAME_SETCURSOR
+
+#endif
+
+#endif
+
+Templates::Series<Color_t> CAGE::colorRamp;
+Texture CAGE::frame;
+
+void SetColorRamp(const Color_t* ramp, size_t size)
+{
+	CAGE::colorRamp = Templates::Series<Color_t>(ramp, size);
 }
 
 void SetFrameDimensions(size_t width, size_t height)
@@ -14,162 +58,108 @@ void SetFrameDimensions(size_t width, size_t height)
 	if (CAGE::frame.tex)
 		delete[] CAGE::frame.tex;
 
-
+	CAGE::frame = CreateTexture(width, height);
+}
+void ClearFrame(float value)
+{
+	ClearTexture(&CAGE::frame, CAGE::colorRamp[(int)(value * (float)CAGE::colorRamp.Size())]);
 }
 
 #ifdef INCLUDE_VECTOR_INT_2
+
+Templates::Growable<FragShaderI2> CAGE::ShadersI2_frag;
+
 #ifdef INCLUDE_VECTOR_INT_3
 
-ShaderID CAGE::RecognizeShader(VertShaderI3 shader)
+Templates::Growable<VertShaderI3> CAGE::ShadersI3_vert;
+
+ShaderID RecognizeShader(VertShaderI3 vertexShader, FragShaderI2 fragShader)
 {
-	int3Shaders_vert_count++;
-	VertShaderI3* replacement = new VertShaderI3[int3Shaders_vert_count];
-	for (unsigned int i = 0; i < int3Shaders_vert_count - 1; ++i)
-	{
-		replacement[i] = int3Shaders_vert[i];
-	}
-	delete[] int3Shaders_vert;
-	int3Shaders_vert = replacement;
-}
-void SetFrameDimensions(size_t width, size_t height)
-{
-	CAGE::frame = Texture(width, height);
-}
-ShaderID RecognizeShader(VertShaderI3 shader)
-{
-	return CAGE::RecognizeShader(shader);
+	ShaderID id;
+	id.type = ShaderID::Type::i3;
+	id.vsID = CAGE::ShadersI3_vert.Push(vertexShader);
+	id.fsID = CAGE::ShadersI2_frag.Push(fragShader);
+	return id;
 }
 
 #endif // INCLUDE_VECTOR_INT_3
 
-ShaderID CAGE::RecognizeShader(VertShaderI2 shader)
-{
-	int2Shaders_vert_count++;
-	VertShaderI2* replacement = new VertShaderI2[int2Shaders_vert_count];
-	for (unsigned int i = 0; i < int2Shaders_vert_count - 1; ++i)
-	{
-		replacement[i] = int2Shaders_vert[i];
-	}
-	delete[] int2Shaders_vert;
-	int2Shaders_vert = replacement;
-}
-ShaderID RecognizeShader(VertShaderI2 shader)
-{
-	return CAGE::RecognizeShader(shader);
-}
+Templates::Growable<VertShaderI2> CAGE::ShadersI2_vert;
 
-ShaderID CAGE::RecognizeShader(FragShaderI2 shader)
+ShaderID RecognizeShader(VertShaderI2 vertexShader, FragShaderI2 fragShader)
 {
-	int2Shaders_frag_count++;
-	FragShaderI2* replacement = new FragShaderI2[int2Shaders_frag_count];
-	for (unsigned int i = 0; i < int2Shaders_frag_count - 1; ++i)
-	{
-		replacement[i] = int2Shaders_frag[i];
-	}
-	delete[] int2Shaders_frag;
-	int2Shaders_frag = replacement;
-}
-ShaderID RecognizeShader(FragShaderI2 shader)
-{
-	return CAGE::RecognizeShader(shader);
+	ShaderID id;
+	id.type = ShaderID::Type::i2;
+	id.vsID = CAGE::ShadersI2_vert.Push(vertexShader);
+	id.fsID = CAGE::ShadersI2_frag.Push(fragShader);
+	return id;
 }
 
 #endif // INCLUDE_VECTOR_INT_2
 
 #ifdef INCLUDE_VECTOR_FLT_2
+
+Templates::Growable<FragShaderF2> CAGE::ShadersF2_frag;
+
 #ifdef INCLUDE_VECTOR_FLT_3
 
-ShaderID CAGE::RecognizeShader(VertShaderF3 shader)
+Templates::Growable<VertShaderF3> CAGE::ShadersF3_vert;
+
+ShaderID RecognizeShader(VertShaderF3 vertexShader, FragShaderF2 fragShader)
 {
-	int3Shaders_vert_count++;
-	VertShaderF3* replacement = new VertShaderF3[flt3Shaders_vert_count];
-	for (unsigned int i = 0; i < flt3Shaders_vert_count - 1; ++i)
-	{
-		replacement[i] = flt3Shaders_vert[i];
-	}
-	delete[] flt3Shaders_vert;
-	flt3Shaders_vert = replacement;
-}
-ShaderID RecognizeShader(VertShaderF3 shader)
-{
-	return CAGE::RecognizeShader(shader);
+	ShaderID id;
+	id.type = ShaderID::Type::f3;
+	id.vsID = CAGE::ShadersF3_vert.Push(vertexShader);
+	id.fsID = CAGE::ShadersF2_frag.Push(fragShader);
+	return id;
 }
 
 #endif // INCLUDE_VECTOR_FLT_3
 
-ShaderID CAGE::RecognizeShader(VertShaderF2 shader)
-{
-	flt2Shaders_vert_count++;
-	VertShaderF2* replacement = new VertShaderF2[flt2Shaders_vert_count];
-	for (unsigned int i = 0; i < flt2Shaders_vert_count - 1; ++i)
-	{
-		replacement[i] = flt2Shaders_vert[i];
-	}
-	delete[] flt2Shaders_vert;
-	flt2Shaders_vert = replacement;
-}
-ShaderID RecognizeShader(VertShaderF2 shader)
-{
-	return CAGE::RecognizeShader(shader);
-}
+Templates::Growable<VertShaderF2> CAGE::ShadersF2_vert;
 
-ShaderID CAGE::RecognizeShader(FragShaderF2 shader)
+ShaderID RecognizeShader(VertShaderF2 vertexShader, FragShaderF2 fragShader)
 {
-	flt2Shaders_frag_count++;
-	FragShaderF2* replacement = new FragShaderF2[flt2Shaders_frag_count];
-	for (unsigned int i = 0; i < flt2Shaders_frag_count - 1; ++i)
-	{
-		replacement[i] = flt2Shaders_frag[i];
-	}
-	delete[] flt2Shaders_frag;
-	flt2Shaders_frag = replacement;
-}
-ShaderID RecognizeShader(FragShaderF2 shader)
-{
-	return CAGE::RecognizeShader(shader);
+	ShaderID id;
+	id.type = ShaderID::Type::f2;
+	id.vsID = CAGE::ShadersF2_vert.Push(vertexShader);
+	id.fsID = CAGE::ShadersF2_frag.Push(fragShader);
+	return id;
 }
 
 #endif // INCLUDE_VECTOR_FLT_2
 
-void CAGE::StartRecordingDrawCalls()
-{
-
-}
 void StartRecordingDrawCalls()
 {
-	CAGE::StartRecordingDrawCalls();
+	// Todo
 }
 
-void CAGE::DisplayDrawnFrame()
-{
-
-}
 void DisplayDrawnFrame()
 {
-	CAGE::DisplayDrawnFrame();
-}
-
-Texture CreateTexture(size_t width, size_t height)
-{
-	return Texture();
+	SetCursor(0, 0);
+	Print(CAGE::frame.tex);
 }
 
 void SetTexturePixel(Texture* texture, size_t x, size_t y, Color_t value)
 {
-	texture->tex[y * texture->w + x] = value;
+	if (x < texture->w && y < texture->h)
+		texture->tex[y * (texture->w + 1) + x] = value;
 }
 
 void ClearTexture(Texture* texture, Color_t clearValue)
 {
-	for (size_t i = 0; i < texture->h * texture->w; ++i)
+	for (size_t y = 0; y < texture->h; ++y)
 	{
-		texture->tex[i] = clearValue;
+		for (size_t x = 0; x < texture->w; ++x)
+		{
+			texture->tex[y * (texture->w + 1) + x] = clearValue;
+		}
 	}
 }
 
 Color_t GetTexturePixel(const Texture* texture, size_t x, size_t y)
 {
-	return texture->tex[y * texture->w + x];
+	return texture->tex[y * (texture->w + 1) + x];
 }
 
 void SetTexturePixel(Texture* texture, IVec2 px, Color_t value)
@@ -179,13 +169,18 @@ void SetTexturePixel(Texture* texture, IVec2 px, Color_t value)
 
 void ApplyTextureTri(Texture* texture, ITri2 tri, Color_t value)
 {
-
+	// Todo
 }
 
 Texture CreateTexture(size_t width, size_t height)
 {
 	Texture t;
-	t.tex = new Color_t[width * height];
+	t.tex = new Color_t[(width + 1) * height];
+	for (size_t i = 0; i < (height); ++i)
+	{
+		t.tex[(width + 1) * i - 1] = '\n';
+	}
+	t.tex[(width + 1) * height - 1] = 0;
 	t.w = width;
 	t.h = height;
 	return t;

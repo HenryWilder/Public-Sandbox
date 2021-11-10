@@ -4,6 +4,10 @@
 #undef INCLUDE_VECTOR_FLT_2
 #undef INCLUDE_VECTOR_INT_3
 #undef INCLUDE_VECTOR_FLT_3
+#undef USE_PRINT_CUSTOM
+#undef USE_PRINT_PRINTF
+#undef USE_PRINT_COUT
+#undef INCLUDE_VECTOR_FLT_3
 #undef COLOR_T
 
 #include "Config.h"
@@ -15,14 +19,57 @@
 #define INCLUDE_VECTOR_FLT_2
 #endif
 
+// Custom print has highest priority
+#ifdef USE_PRINT_CUSTOM
+#undef USE_PRINT_PRINTF
+#undef USE_PRINT_COUT
+#else
+// Printf has second highest priority
+#ifdef USE_PRINT_PRINTF
+#undef USE_PRINT_COUT
+#else
+// Cout has third highest priority
+#ifdef USE_PRINT_COUT
+#else
+// Printf is also default
+#define USE_PRINT_PRINTF
+#endif
+#endif
+#endif
+
+#ifdef COLOR_T
+using Color_t = COLOR_T;
+#else
+using Color_t = char;
+#endif
+
+#ifdef USE_PRINT_CUSTOM
+void CUSTOM_PRINT_NAME_PRINT(const Color_t* str);
+void CUSTOM_PRINT_NAME_SETCURSOR(size_t x, size_t y);
+#define Print CUSTOM_PRINT_NAME_PRINT
+#define SetCursor CUSTOM_PRINT_NAME_SETCURSOR
+#else
+#ifdef USE_PRINT_PRINTF
+void Print_Printf(const Color_t* str);
+void SetCursor_Printf(size_t x, size_t y);
+#define Print Print_Printf
+#define SetCursor SetCursor_Printf
+#else
+#ifdef USE_PRINT_COUT
+void Print_Cout(const Color_t* str);
+void SetCursor_Cout(size_t x, size_t y);
+#define Print Print_Cout
+#define SetCursor SetCursor_Cout
+#endif
+#endif
+#endif
+
 namespace Templates
 {
-	size_t Method_Double(size_t currentSize);
-	size_t Method_Increment(size_t currentSize);
-
 	// A dynamic array which grows but never shrinks and cannot have elements erased, allowing for integer IDs to never be invalidated.
 	// Elements can be replaced.
-	template<typename Ty, size_t(*SpaceToAllocate)(size_t) = Method_Increment> class Growable
+	template<typename Ty>
+	class Growable
 	{
 		Ty* data;
 		size_t count;
@@ -70,7 +117,7 @@ namespace Templates
 		size_t Push(const Ty& element)
 		{
 			if (count == space)
-				Reserve(SpaceToAllocate(space));
+				Reserve(space);
 
 			data[count] = element;
 			return count++;
@@ -92,184 +139,85 @@ namespace Templates
 
 	// An array that can have its entire data replaced at once. It cannot be resized any other way.
 	// Allows for a swappable "palette" of sorts.
-	template<typename Ty, bool b_UseConstReference = (sizeof(Ty)>sizeof(Ty*))> class Array {};
-
-	// An array that can have its entire data replaced at once. It cannot be resized any other way.
-	// Allows for a swappable "palette" of sorts.
-	template<typename Ty> class Array<Ty,false>
+	template<typename Ty>
+	class Series
 	{
-		const Ty* data;
-		bool stack;
-		size_t count;
+		const Ty* data = nullptr;
+		size_t len = 0;
 
 		void Free()
 		{
-			if (data && !stack)
+			if (data)
 				delete[] data;
 		}
-
-	public:
-		Array()
-		{
-			data = nullptr;
-			stack = false;
-			count = 0;
-		}
-		~Array()
+		void Replace(const Ty* arr, size_t size)
 		{
 			Free();
+			len = size;
+			Ty* temp = new Ty[size];
+			for (size_t i = 0; i < size; ++i)
+			{
+				temp[i] = arr[i];
+			}
+			data = temp;
+		}
+	public:
+		Series() : data(nullptr), len(0) {}
+
+		template<size_t size>
+		Series(const Ty(&arr)[size])
+		{
+			Replace(arr, size);
+		}
+
+		template<size_t size>
+		Series& operator=(const Ty(&arr)[size])
+		{
+			Replace(arr, size);
+		}
+
+		Series(const Ty* arr, size_t size)
+		{
+			Replace(arr, size);
+		}
+
+		Series(const Series& base)
+		{
+			Replace(base.data, base.len);
+		}
+
+		Series& operator=(const Series& base)
+		{
+			Replace(base.data, base.len);
+			return *this;
+		}
+
+		~Series()
+		{
+			Free();
+		}
+
+		void Clear()
+		{
+			Free();
+			data = nullptr;
+			len = 0;
+		}
+
+		Ty operator[](size_t i) const
+		{
+			return data[i];
 		}
 
 		size_t Size() const
 		{
-			return count;
-		}
-
-		// Copies each element from the input array, allowing the passed in array to be freed without issue.
-		// Good for when you want to keep using the passed array for other things.
-		void SetSafe_Heap(const Ty* dna, size_t size)
-		{
-			Free();
-			stack = false;
-			Ty* replacement = new Ty[size];
-			for (size_t i = 0; i < count = size; ++i)
-			{
-				replacement[i] = dna[i];
-			}
-			data = replacement;
-		}
-
-		// Uses the exact pointer which was passed in, posing the risk of unannounced memory deletion (or breaking if the memory is deleted externally!),
-		// but skipping the copy step and handling memory freeing automatically.
-		// Good for arrays allocated for exclusively this purpose.
-		void SetFast_Heap(const Ty* arr, size_t size)
-		{
-			Free();
-			stack = false;
-			data = arr;
-			count = size;
-		}
-
-		// Copies each element from the input array, allowing the passed in array to be popped without issue.
-		// Good for one-off arrays you don't care about and just want to type in easily.
-		void SetSafe_Stack(const Ty(&& arr)[size])
-		{
-			Free();
-			stack = true;
-			Ty* replacement = new Ty[size];
-			for (size_t i = 0; i < count = size; ++i)
-			{
-				replacement[i] = dna[i];
-			}
-			data = replacement;
-		}
-
-		// Uses the exact pointer which was passed in, posing the risk of unannounced memory deletion (or breaking if the array is popped externally!),
-		// but skipping the copy step and handling memory freeing automatically.
-		// Good for arrays pushed to the stack (at the highest scope this class will be used in!) for exclusively this purpose.
-		template<size_t size> void SetFast_Stack(const Ty(&arr)[size])
-		{
-			Free();
-			stack = true;
-			data = arr;
-			count = size;
-		}
-
-		Ty operator[](size_t i)
-		{
-			return data[i];
-		}
-	};
-
-	// An array that can have its entire data replaced at once. It cannot be resized any other way.
-	// Allows for a swappable "palette" of sorts.
-	template<typename Ty> class Array<Ty,true>
-	{
-		const Ty* data;
-		bool stack;
-		size_t count;
-
-		void Free()
-		{
-			if (data && !stack)
-				delete[] data;
-		}
-
-	public:
-		Array()
-		{
-			data = nullptr;
-			stack = false;
-			count = 0;
-		}
-		~Array()
-		{
-			Free();
-		}
-
-		size_t Size() const
-		{
-			return count;
-		}
-
-		// Copies each element from the input array, allowing the passed in array to be freed without issue.
-		// Good for when you want to keep using the passed array for other things.
-		void SetSafe_Heap(const Ty* dna, size_t size)
-		{
-			Free();
-			stack = false;
-			Ty* replacement = new Ty[size];
-			for (size_t i = 0; i < count = size; ++i)
-			{
-				replacement[i] = dna[i];
-			}
-			data = replacement;
-		}
-
-		// Uses the exact pointer which was passed in, posing the risk of unannounced memory deletion (or breaking if the memory is deleted externally!),
-		// but skipping the copy step and handling memory freeing automatically.
-		// Good for arrays allocated for exclusively this purpose.
-		void SetFast_Heap(const Ty* arr, size_t size)
-		{
-			Free();
-			stack = false;
-			data = arr;
-			count = size;
-		}
-
-		// Copies each element from the input array, allowing the passed in array to be popped without issue.
-		// Good for one-off arrays you don't care about and just want to type in easily.
-		void SetSafe_Stack(const Ty (&&arr)[size])
-		{
-			Free();
-			stack = true;
-			Ty* replacement = new Ty[size];
-			for (size_t i = 0; i < count = size; ++i)
-			{
-				replacement[i] = dna[i];
-			}
-			data = replacement;
-		}
-
-		// Uses the exact pointer which was passed in, posing the risk of unannounced memory deletion (or breaking if the array is popped externally!),
-		// but skipping the copy step and handling memory freeing automatically.
-		// Good for arrays pushed to the stack (at the highest scope this class will be used in!) for exclusively this purpose.
-		template<size_t size> void SetFast_Stack(const Ty (&arr)[size])
-		{
-			Free();
-			stack = true;
-			data = arr;
-			count = size;
-		}
-
-		const Ty& operator[](size_t i)
-		{
-			return data[i];
+			return len;
 		}
 	};
 
 	// A dynamic array which can only be accessed at the back, which can be grown or shrank without copying prior elements
-	template<typename Ty> class LinkedStack
+	template<typename Ty>
+	class LinkedStack
 	{
 		class Element
 		{
@@ -306,7 +254,7 @@ namespace Templates
 				{
 					tail = tail->prev;
 					delete tail->next;
-					tail->next = nullptr
+					tail->next = nullptr;
 				}
 				else
 				{
@@ -338,12 +286,6 @@ namespace Templates
 		}
 	};
 }
-
-#ifdef COLOR_T
-using Color_t = COLOR_T;
-#else // Default
-using Color_t = char;
-#endif
 
 struct Texture
 {
@@ -470,99 +412,101 @@ class ShaderID
 	{
 		invalid,
 
-#ifdef INCLUDE_VECTOR_INT_3
-		vi3fi2,
-#endif // INCLUDE_VECTOR_INT_3
-
 #ifdef INCLUDE_VECTOR_INT_2
-		vi2fi2,
+#ifdef INCLUDE_VECTOR_INT_3
+		i3,
+#endif // INCLUDE_VECTOR_INT_3
+		i2,
 #endif // INCLUDE_VECTOR_INT_2
 
-#ifdef INCLUDE_VECTOR_FLT_3
-		vf3fi2,
-#endif // INCLUDE_VECTOR_FLT_3
-
 #ifdef INCLUDE_VECTOR_FLT_2
-		vf2fi2,
+#ifdef INCLUDE_VECTOR_FLT_3
+		f3,
+#endif // INCLUDE_VECTOR_FLT_3
+		f2,
 #endif // INCLUDE_VECTOR_FLT_2
 
 	} type;
 
-	unsigned int vsID, fsID;
+	size_t vsID, fsID;
 
 	friend class CAGE;
+
+#ifdef INCLUDE_VECTOR_INT_2
+#ifdef INCLUDE_VECTOR_INT_3
+	friend ShaderID RecognizeShader(VertShaderI3, FragShaderI2);
+#endif // INCLUDE_VECTOR_INT_3
+	friend ShaderID RecognizeShader(VertShaderI2, FragShaderI2);
+#endif // INCLUDE_VECTOR_INT_2
+#ifdef INCLUDE_VECTOR_FLT_2
+#ifdef INCLUDE_VECTOR_FLT_3
+	friend ShaderID RecognizeShader(VertShaderF3, FragShaderF2);
+#endif // INCLUDE_VECTOR_FLT_3
+	friend ShaderID RecognizeShader(VertShaderF2, FragShaderF2);
+#endif // INCLUDE_VECTOR_FLT_2
 };
 
 class CAGE
 {
-	static Templates::Array<Color_t> colorRamp; // Array of grayscale values from which to sample
+	static Templates::Series<Color_t> colorRamp; // Array of grayscale values from which to sample
+
+	friend void SetColorRamp(const Color_t* ramp, size_t size);
 
 	static Texture frame;
-
 	friend void SetFrameDimensions(size_t width, size_t height);
+	friend void ClearFrame(float value);
 
 	// **Shaders**
-	// Both static & friend methods used so that the singular "friend class" declaration in the ShaderID type makes the ShaderID accessible to only the methods in the CAGE class
+
 	// Int
 #ifdef INCLUDE_VECTOR_INT_2
+
+	static Templates::Growable<FragShaderI2> ShadersI2_frag;
+
 #ifdef INCLUDE_VECTOR_INT_3
 
-	static VertShaderI3* int3Shaders_vert;
-	static unsigned int int3Shaders_vert_count;
-	static ShaderID RecognizeShader(VertShaderI3);
-	friend ShaderID RecognizeShader(VertShaderI3);
+	static Templates::Growable<VertShaderI3> ShadersI3_vert;
+	friend ShaderID RecognizeShader(VertShaderI3 vertexShader, FragShaderI2 fragShader);
 
 #endif // INCLUDE_VECTOR_INT_3
 
-	static VertShaderI2* int2Shaders_vert;
-	static unsigned int int2Shaders_vert_count;
-	static ShaderID RecognizeShader(VertShaderI2);
-	friend ShaderID RecognizeShader(VertShaderI2);
-
-	static FragShaderI2* int2Shaders_frag;
-	static unsigned int int2Shaders_frag_count;
-	static ShaderID RecognizeShader(FragShaderI2);
-	friend ShaderID RecognizeShader(FragShaderI2);
+	static Templates::Growable<VertShaderI2> ShadersI2_vert;
+	friend ShaderID RecognizeShader(VertShaderI2 vertexShader, FragShaderI2 fragShader);
 
 #endif // INCLUDE_VECTOR_INT_2
 
 	// Float
 #ifdef INCLUDE_VECTOR_FLT_2
+
+	static Templates::Growable<FragShaderF2> ShadersF2_frag;
+
 #ifdef INCLUDE_VECTOR_FLT_3
 
-	static VertShaderF3* flt3Shaders_vert;
-	static unsigned int flt3Shaders_vert_count;
-	static ShaderID RecognizeShader(VertShaderF3);
-	friend ShaderID RecognizeShader(VertShaderF3);
+	static Templates::Growable<VertShaderF3> ShadersF3_vert;
+	friend ShaderID RecognizeShader(VertShaderF3 vertexShader, FragShaderF2 fragShader);
 
-#endif // INCLUDE_VECTOR_INT_3
+#endif // INCLUDE_VECTOR_FLT_3
 
-	static VertShaderF2* flt2Shaders_vert;
-	static unsigned int flt2Shaders_vert_count;
-	static ShaderID RecognizeShader(VertShaderF2);
-	friend ShaderID RecognizeShader(VertShaderF2);
-
-	static FragShaderF2* flt2Shaders_frag;
-	static unsigned int flt2Shaders_frag_count;
-	static ShaderID RecognizeShader(FragShaderF2);
-	friend ShaderID RecognizeShader(FragShaderF2);
+	static Templates::Growable<VertShaderF2> ShadersF2_vert;
+	friend ShaderID RecognizeShader(VertShaderF2 vertexShader, FragShaderF2 fragShader);
 
 #endif // INCLUDE_VECTOR_FLT_2
 
-	static void StartRecordingDrawCalls();
 	friend void StartRecordingDrawCalls();
-	static void DisplayDrawnFrame();
 	friend void DisplayDrawnFrame();
 };
 
+void SetColorRamp(const Color_t* ramp, size_t size);
 void SetFrameDimensions(size_t width, size_t height);
+void ClearFrame(float value);
 
-ShaderID RecognizeShader(VertShaderI3);
-ShaderID RecognizeShader(VertShaderI2);
-ShaderID RecognizeShader(FragShaderI2);
-ShaderID RecognizeShader(VertShaderF3);
-ShaderID RecognizeShader(VertShaderF2);
-ShaderID RecognizeShader(FragShaderF2);
+ShaderID RecognizeShader(VertShaderI3 vertexShader, FragShaderI2 fragShader);
+ShaderID RecognizeShader(VertShaderI2 vertexShader, FragShaderI2 fragShader);
+ShaderID RecognizeShader(VertShaderF3 vertexShader, FragShaderF2 fragShader);
+ShaderID RecognizeShader(VertShaderF2 vertexShader, FragShaderF2 fragShader);
 
 void StartRecordingDrawCalls();
 void DisplayDrawnFrame();
+
+#undef Print
+#undef SetCursor

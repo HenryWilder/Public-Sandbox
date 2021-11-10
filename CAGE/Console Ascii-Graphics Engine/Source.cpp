@@ -1,17 +1,20 @@
 #include "Source.h"
 
-void FreeFrame()
+size_t Growable_Double(size_t currentSize)
 {
-	if (CAGE::frame)
-		delete[] CAGE::frame;
+	return currentSize > 0 ? currentSize : 1;
 }
-void SetFrameDimensions(unsigned int width, unsigned int height)
+size_t Growable_Increment(size_t currentSize)
 {
-	FreeFrame();
+	return 1;
+}
 
-	CAGE::frame = new Color_t[(unsigned long long)height * (unsigned long long)width];
-	CAGE::frame_w = width;
-	CAGE::frame_h = height;
+void SetFrameDimensions(size_t width, size_t height)
+{
+	if (CAGE::frame.tex)
+		delete[] CAGE::frame.tex;
+
+
 }
 
 #ifdef INCLUDE_VECTOR_INT_2
@@ -27,6 +30,10 @@ ShaderID CAGE::RecognizeShader(VertShaderI3 shader)
 	}
 	delete[] int3Shaders_vert;
 	int3Shaders_vert = replacement;
+}
+void SetFrameDimensions(size_t width, size_t height)
+{
+	CAGE::frame = Texture(width, height);
 }
 ShaderID RecognizeShader(VertShaderI3 shader)
 {
@@ -66,6 +73,7 @@ ShaderID RecognizeShader(FragShaderI2 shader)
 {
 	return CAGE::RecognizeShader(shader);
 }
+
 #endif // INCLUDE_VECTOR_INT_2
 
 #ifdef INCLUDE_VECTOR_FLT_2
@@ -139,4 +147,46 @@ void CAGE::DisplayDrawnFrame()
 void DisplayDrawnFrame()
 {
 	CAGE::DisplayDrawnFrame();
+}
+
+Texture CreateTexture(size_t width, size_t height)
+{
+	return Texture();
+}
+
+void SetTexturePixel(Texture* texture, size_t x, size_t y, Color_t value)
+{
+	texture->tex[y * texture->w + x] = value;
+}
+
+void ClearTexture(Texture* texture, Color_t clearValue)
+{
+	for (size_t i = 0; i < texture->h * texture->w; ++i)
+	{
+		texture->tex[i] = clearValue;
+	}
+}
+
+Color_t GetTexturePixel(const Texture* texture, size_t x, size_t y)
+{
+	return texture->tex[y * texture->w + x];
+}
+
+void SetTexturePixel(Texture* texture, IVec2 px, Color_t value)
+{
+	SetTexturePixel(texture, px.x, px.y, value);
+}
+
+void ApplyTextureTri(Texture* texture, ITri2 tri, Color_t value)
+{
+
+}
+
+Texture CreateTexture(size_t width, size_t height)
+{
+	Texture t;
+	t.tex = new Color_t[width * height];
+	t.w = width;
+	t.h = height;
+	return t;
 }

@@ -31,6 +31,15 @@
 *.out
 *.app
 
+# Debug
+*.tlog
+*.lastbuildstate
+*.recipe
+*.log
+*.idb
+*.pdb
+*.ilk
+
 # Visual Studio
 *.user
 *.suo

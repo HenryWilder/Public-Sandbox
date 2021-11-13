@@ -102,6 +102,7 @@ Color_t GetTexturePixel(const Texture* texture, size_t x, size_t y)
 		return (Color_t)0;
 }
 
+#ifdef INCLUDE_VECTOR_INT_2
 
 size_t IndexTexture(const Texture* texture, IVec2 px)
 {
@@ -135,6 +136,10 @@ void ApplyTextureTri(Texture* texture, ITri2 tri, Color_t value)
 	// Todo
 }
 
+#endif
+
+#ifdef INCLUDE_VECTOR_FLT_2
+
 void SetTexturePt(Texture* texture, FVec2 pt, Color_t value)
 {
 	SetTexturePixel(texture, (size_t)(pt.x + 0.5f), (size_t)(pt.y + 0.5f), value);
@@ -145,6 +150,7 @@ Color_t GetTexturePt(const Texture* texture, FVec2 pt)
 	return GetTexturePixel(texture, (size_t)(pt.x + 0.5f), (size_t)(pt.y + 0.5f));
 }
 
+#endif
 
 Templates::Series<Color_t> CAGE::colorRamp;
 Texture CAGE::frame;
@@ -237,6 +243,6 @@ void StartRecordingDrawCalls()
 
 void DisplayDrawnFrame()
 {
-	SetCursor(0, 0);
+	SetCursor(0,0);
 	Print(CAGE::frame.tex);
 }

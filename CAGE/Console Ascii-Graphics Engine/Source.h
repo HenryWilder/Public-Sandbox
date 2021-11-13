@@ -503,10 +503,18 @@ void SetColorRamp(const Color_t* ramp, size_t size);
 void SetFrameDimensions(size_t width, size_t height);
 void ClearFrame(float value);
 
+#ifdef INCLUDE_VECTOR_INT_3
 ShaderID RecognizeShader(VertShaderI3 vertexShader, FragShaderI2 fragShader);
+#endif
+#ifdef INCLUDE_VECTOR_INT_2
 ShaderID RecognizeShader(VertShaderI2 vertexShader, FragShaderI2 fragShader);
+#endif
+#ifdef INCLUDE_VECTOR_FLT_3
 ShaderID RecognizeShader(VertShaderF3 vertexShader, FragShaderF2 fragShader);
+#endif
+#ifdef INCLUDE_VECTOR_FLT_2
 ShaderID RecognizeShader(VertShaderF2 vertexShader, FragShaderF2 fragShader);
+#endif
 
 void StartRecordingDrawCalls();
 void DisplayDrawnFrame();

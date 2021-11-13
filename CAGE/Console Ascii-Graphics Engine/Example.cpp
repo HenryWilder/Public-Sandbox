@@ -3,7 +3,7 @@
 int main()
 {
 	SetFrameDimensions(32, 16);
-	SetColorRamp(" #", 10);
+	SetColorRamp(" -+#", sizeof(" -+#") - 1);
 	ClearFrame(0);
 
 	DisplayDrawnFrame();

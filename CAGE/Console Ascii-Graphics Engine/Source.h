@@ -292,7 +292,9 @@ struct Texture
 	Color_t* tex;
 	size_t w, h;
 };
+size_t EOTex(const Texture* texture); // Out of bounds index
 
+size_t IndexTexture(const Texture* texture, size_t x, size_t y);
 Texture CreateTexture(size_t width, size_t height);
 void SetTexturePixel(Texture* texture, size_t x, size_t y, Color_t value);
 void ClearTexture(Texture* texture, Color_t clearValue);
@@ -310,6 +312,7 @@ struct IVec2
 typedef VertShaderData(*VertShaderI2)(IVec2);
 typedef Color_t(*FragShaderI2)(IVec2, VertShaderData);
 
+size_t IndexTexture(const Texture* texture, IVec2 px);
 void SetTexturePixel(Texture* texture, IVec2 px, Color_t value);
 Color_t GetTexturePixel(const Texture* texture, IVec2 px);
 
@@ -320,7 +323,7 @@ struct IRect2
 		w, h;
 };
 
-void ApplyTextureRect(Texture* texture, IRect2 tri, Color_t value);
+void ApplyTextureRect(Texture* texture, IRect2 rect, Color_t value);
 
 struct ITri2
 {
@@ -353,8 +356,8 @@ struct FTri2
 	FVec2 p1, p2, p3;
 };
 
-void SetTexturePt(Texture* texture, FVec2 px, Color_t value);
-Color_t GetTexturePt(const Texture* texture, FVec2 px);
+void SetTexturePt(Texture* texture, FVec2 pt, Color_t value);
+Color_t GetTexturePt(const Texture* texture, FVec2 pt);
 
 #endif // INCLUDE_VECTOR_FLOAT_2
 

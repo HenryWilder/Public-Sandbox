@@ -45,6 +45,107 @@ void SetCursor_Cout(size_t x, size_t y)
 
 #endif
 
+size_t EOTex(const Texture* texture)
+{
+	if (!texture)
+		return 0;
+	else
+		return (texture->w + 1) * texture->h;
+}
+
+size_t IndexTexture(const Texture* texture, size_t x, size_t y)
+{
+	if (!texture || x >= texture->w || y >= texture->h)
+		return EOTex(texture);
+	else
+		return (texture->w + 1) * y + x;
+}
+
+Texture CreateTexture(size_t width, size_t height)
+{
+	Texture t;
+	t.tex = new Color_t[(width + 1) * height];
+	for (size_t i = 0; i < (height); ++i)
+	{
+		t.tex[(width + 1) * i - 1] = '\n';
+	}
+	t.tex[(width + 1) * height - 1] = 0;
+	t.w = width;
+	t.h = height;
+	return t;
+}
+
+void SetTexturePixel(Texture* texture, size_t x, size_t y, Color_t value)
+{
+	size_t index = IndexTexture(texture, x, y);
+	if (index != EOTex(texture))
+		texture->tex[index] = value;
+}
+
+void ClearTexture(Texture* texture, Color_t clearValue)
+{
+	for (size_t y = 0; y < texture->h; ++y)
+	{
+		for (size_t x = 0; x < texture->w; ++x)
+		{
+			texture->tex[y * (texture->w + 1) + x] = clearValue;
+		}
+	}
+}
+
+Color_t GetTexturePixel(const Texture* texture, size_t x, size_t y)
+{
+	size_t index = IndexTexture(texture, x, y);
+	if (index != EOTex(texture))
+		return texture->tex[index];
+	else
+		return (Color_t)0;
+}
+
+
+size_t IndexTexture(const Texture* texture, IVec2 px)
+{
+	return IndexTexture(texture, px.x, px.y);
+}
+
+void SetTexturePixel(Texture* texture, IVec2 px, Color_t value)
+{
+	SetTexturePixel(texture, px.x, px.y, value);
+}
+
+Color_t GetTexturePixel(const Texture* texture, IVec2 px)
+{
+	return GetTexturePixel(texture, px.x, px.y);
+}
+
+
+void ApplyTextureRect(Texture* texture, IRect2 rect, Color_t value)
+{
+	for (size_t y = rect.y; y < rect.y + rect.h && y < texture->h; ++y)
+	{
+		for (size_t x = rect.x; x < rect.x + rect.w && x < texture->w; ++x)
+		{
+			texture->tex[y * (texture->w + 1) + x] = value;
+		}
+	}
+}
+
+void ApplyTextureTri(Texture* texture, ITri2 tri, Color_t value)
+{
+	// Todo
+}
+
+void SetTexturePt(Texture* texture, FVec2 pt, Color_t value)
+{
+	SetTexturePixel(texture, (size_t)(pt.x + 0.5f), (size_t)(pt.y + 0.5f), value);
+}
+
+Color_t GetTexturePt(const Texture* texture, FVec2 pt)
+{
+	return GetTexturePixel(texture, (size_t)(pt.x + 0.5f), (size_t)(pt.y + 0.5f));
+}
+
+
 Templates::Series<Color_t> CAGE::colorRamp;
 Texture CAGE::frame;
 
@@ -138,50 +239,4 @@ void DisplayDrawnFrame()
 {
 	SetCursor(0, 0);
 	Print(CAGE::frame.tex);
-}
-
-void SetTexturePixel(Texture* texture, size_t x, size_t y, Color_t value)
-{
-	if (x < texture->w && y < texture->h)
-		texture->tex[y * (texture->w + 1) + x] = value;
-}
-
-void ClearTexture(Texture* texture, Color_t clearValue)
-{
-	for (size_t y = 0; y < texture->h; ++y)
-	{
-		for (size_t x = 0; x < texture->w; ++x)
-		{
-			texture->tex[y * (texture->w + 1) + x] = clearValue;
-		}
-	}
-}
-
-Color_t GetTexturePixel(const Texture* texture, size_t x, size_t y)
-{
-	return texture->tex[y * (texture->w + 1) + x];
-}
-
-void SetTexturePixel(Texture* texture, IVec2 px, Color_t value)
-{
-	SetTexturePixel(texture, px.x, px.y, value);
-}
-
-void ApplyTextureTri(Texture* texture, ITri2 tri, Color_t value)
-{
-	// Todo
-}
-
-Texture CreateTexture(size_t width, size_t height)
-{
-	Texture t;
-	t.tex = new Color_t[(width + 1) * height];
-	for (size_t i = 0; i < (height); ++i)
-	{
-		t.tex[(width + 1) * i - 1] = '\n';
-	}
-	t.tex[(width + 1) * height - 1] = 0;
-	t.w = width;
-	t.h = height;
-	return t;
 }

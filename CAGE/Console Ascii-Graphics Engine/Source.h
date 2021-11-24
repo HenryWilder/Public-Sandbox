@@ -501,7 +501,13 @@ class CAGE
 
 #endif // INCLUDE_VECTOR_FLT_2
 
-	friend void StartRecordingDrawCalls();
+	// Remembers what functions are called so that only intersecting pixels are drawn.
+	// I'm not sure whether this will even be helpful, since storing & recalling all the overlaps could be slower
+	// than simply drawing overtop of the same pixels in cases where the RAM is cheaper than the CPU. (99.999999% of cases)
+	// Still, it might be useful in fringe cases.
+	friend void RecordDrawCallsForCulling();
+	
+	// Displays the frame using the print function
 	friend void DisplayDrawnFrame();
 };
 
@@ -526,7 +532,7 @@ ShaderID RecognizeShader(VertShaderF3 vertexShader, FragShaderF2 fragShader);
 ShaderID RecognizeShader(VertShaderF2 vertexShader, FragShaderF2 fragShader);
 #endif
 
-void StartRecordingDrawCalls();
+void RecordDrawCallsForCulling();
 void DisplayDrawnFrame();
 
 #undef Print

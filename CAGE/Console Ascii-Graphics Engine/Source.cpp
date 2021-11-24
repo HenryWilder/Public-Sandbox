@@ -266,7 +266,7 @@ ShaderID RecognizeShader(VertShaderF2 vertexShader, FragShaderF2 fragShader)
 
 #endif // INCLUDE_VECTOR_FLT_2
 
-void StartRecordingDrawCalls()
+void RecordDrawCallsForCulling()
 {
 	// Todo
 }

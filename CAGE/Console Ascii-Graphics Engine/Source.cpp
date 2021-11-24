@@ -174,6 +174,8 @@ void SetColorRamp(const Color_t* ramp, size_t size)
 
 Color_t SampleRamp(float value)
 {
+	if (value > 1.0f) value = 1.0f;
+	else if (value < 0.0f) value = 0.0f;
 	return CAGE::colorRamp[(int)(value * (float)(CAGE::colorRamp.Size() - 1))];
 }
 

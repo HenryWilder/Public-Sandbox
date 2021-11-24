@@ -300,6 +300,8 @@ void SetTexturePixel(Texture* texture, size_t x, size_t y, Color_t value);
 void ClearTexture(Texture* texture, Color_t clearValue);
 Color_t GetTexturePixel(const Texture* texture, size_t x, size_t y);
 
+void ApplyTextureRect(Texture* texture, size_t x, size_t y, size_t width, size_t height, Color_t value);
+
 using VertShaderData = void*;
 
 // IVec2-specific structure and functions
@@ -454,10 +456,14 @@ class CAGE
 	static Templates::Series<Color_t> colorRamp; // Array of grayscale values from which to sample
 
 	friend void SetColorRamp(const Color_t* ramp, size_t size);
+	friend Color_t SampleRamp(float value);
 
 	static Texture frame;
 	friend void SetFrameDimensions(size_t width, size_t height);
 	friend void ClearFrame(float value);
+
+	friend void DrawPixel(size_t x, size_t y, float value);
+	friend void DrawRectangle(size_t x, size_t y, size_t width, size_t height, float value);
 
 	// **Shaders**
 
@@ -500,8 +506,12 @@ class CAGE
 };
 
 void SetColorRamp(const Color_t* ramp, size_t size);
+Color_t SampleRamp(float value);
 void SetFrameDimensions(size_t width, size_t height);
 void ClearFrame(float value);
+
+void DrawPixel(size_t x, size_t y, float value);
+void DrawRectangle(size_t x, size_t y, size_t width, size_t height, float value);
 
 #ifdef INCLUDE_VECTOR_INT_3
 ShaderID RecognizeShader(VertShaderI3 vertexShader, FragShaderI2 fragShader);

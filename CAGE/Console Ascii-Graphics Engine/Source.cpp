@@ -102,6 +102,18 @@ Color_t GetTexturePixel(const Texture* texture, size_t x, size_t y)
 		return (Color_t)0;
 }
 
+void ApplyTextureRect(Texture* texture, size_t x, size_t y, size_t width, size_t height, Color_t value)
+{
+	for (size_t _y = y; _y < (y + height) && _y < texture->h; ++_y)
+	{
+		size_t lineStart = IndexTexture(texture, x, _y);
+		for (size_t _x = 0; _x < width && (x + _x) < texture->w; ++_x)
+		{
+			texture->tex[lineStart + _x] = value;
+		}
+	}
+}
+
 #ifdef INCLUDE_VECTOR_INT_2
 
 size_t IndexTexture(const Texture* texture, IVec2 px)
@@ -160,6 +172,11 @@ void SetColorRamp(const Color_t* ramp, size_t size)
 	CAGE::colorRamp = Templates::Series<Color_t>(ramp, size);
 }
 
+Color_t SampleRamp(float value)
+{
+	return CAGE::colorRamp[(int)(value * (float)(CAGE::colorRamp.Size() - 1))];
+}
+
 void SetFrameDimensions(size_t width, size_t height)
 {
 	if (CAGE::frame.tex)
@@ -167,9 +184,20 @@ void SetFrameDimensions(size_t width, size_t height)
 
 	CAGE::frame = CreateTexture(width, height);
 }
+
 void ClearFrame(float value)
 {
-	ClearTexture(&CAGE::frame, CAGE::colorRamp[(int)(value * (float)CAGE::colorRamp.Size())]);
+	ClearTexture(&CAGE::frame, SampleRamp(value));
+}
+
+void DrawPixel(size_t x, size_t y, float value)
+{
+	SetTexturePixel(&CAGE::frame, x, y, SampleRamp(value));
+}
+
+void DrawRectangle(size_t x, size_t y, size_t width, size_t height, float value)
+{
+	ApplyTextureRect(&CAGE::frame, x, y, width, height, SampleRamp(value));
 }
 
 #ifdef INCLUDE_VECTOR_INT_2

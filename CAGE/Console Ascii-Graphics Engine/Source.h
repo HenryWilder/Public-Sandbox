@@ -472,6 +472,7 @@ class CAGE
 
 	friend void DrawPixel(size_t x, size_t y, float value);
 	friend void DrawRectangle(size_t x, size_t y, size_t width, size_t height, float value);
+	friend void DrawLine(size_t x0, size_t y0, size_t x1, size_t y1, float value);
 
 	// **Shaders**
 

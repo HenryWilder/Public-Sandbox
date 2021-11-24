@@ -64,6 +64,13 @@ void SetCursor_Cout(size_t x, size_t y);
 #endif
 #endif
 
+float Abs(float x);
+signed long long Abs(signed long long x);
+float Min(float a, float b);
+size_t Min(size_t a, size_t b);
+float Max(float a, float b);
+size_t Max(size_t a, size_t b);
+
 namespace Templates
 {
 	// A dynamic array which grows but never shrinks and cannot have elements erased, allowing for integer IDs to never be invalidated.
@@ -301,6 +308,7 @@ void ClearTexture(Texture* texture, Color_t clearValue);
 Color_t GetTexturePixel(const Texture* texture, size_t x, size_t y);
 
 void ApplyTextureRect(Texture* texture, size_t x, size_t y, size_t width, size_t height, Color_t value);
+void ApplyTextureLine(Texture* texture, size_t x0, size_t y0, size_t x1, size_t y1, Color_t value);
 
 using VertShaderData = void*;
 

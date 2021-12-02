@@ -70,6 +70,20 @@ size_t Max(size_t a, size_t b)
 	return (b > a ? b : a);
 }
 
+ColorRamp g_ramp;
+
+void SetColorRamp(const Color_t* ramp, size_t size)
+{
+	g_ramp = ColorRamp(ramp, size);
+}
+
+Color_t SampleRamp(float value)
+{
+	if (value > 1.0f) value = 1.0f;
+	else if (value < 0.0f) value = 0.0f;
+	return g_ramp[(int)(value * (float)(g_ramp.Size() - 1))];
+}
+
 size_t EOTex(const Texture* texture)
 {
 	if (!texture)
@@ -255,115 +269,8 @@ Color_t GetTexturePt(const Texture* texture, FVec2 pt)
 
 #endif
 
-Templates::Series<Color_t> CAGE::colorRamp;
-Texture CAGE::frame;
-
-void SetColorRamp(const Color_t* ramp, size_t size)
-{
-	CAGE::colorRamp = Templates::Series<Color_t>(ramp, size);
-}
-
-Color_t SampleRamp(float value)
-{
-	if (value > 1.0f) value = 1.0f;
-	else if (value < 0.0f) value = 0.0f;
-	return CAGE::colorRamp[(int)(value * (float)(CAGE::colorRamp.Size() - 1))];
-}
-
-void SetFrameDimensions(size_t width, size_t height)
-{
-	if (CAGE::frame.tex)
-		delete[] CAGE::frame.tex;
-
-	CAGE::frame = CreateTexture(width, height);
-}
-
-void ClearFrame(float value)
-{
-	ClearTexture(&CAGE::frame, SampleRamp(value));
-}
-
-void DrawPixel(size_t x, size_t y, float value)
-{
-	SetTexturePixel(&CAGE::frame, x, y, SampleRamp(value));
-}
-
-void DrawRectangle(size_t x, size_t y, size_t width, size_t height, float value)
-{
-	ApplyTextureRect(&CAGE::frame, x, y, width, height, SampleRamp(value));
-}
-
-#ifdef INCLUDE_VECTOR_INT_2
-
-Templates::Growable<FragShaderI2> CAGE::ShadersI2_frag;
-
-#ifdef INCLUDE_VECTOR_INT_3
-
-Templates::Growable<VertShaderI3> CAGE::ShadersI3_vert;
-
-ShaderID RecognizeShader(VertShaderI3 vertexShader, FragShaderI2 fragShader)
-{
-	ShaderID id;
-	id.type = ShaderID::Type::i3;
-	id.vsID = CAGE::ShadersI3_vert.Push(vertexShader);
-	id.fsID = CAGE::ShadersI2_frag.Push(fragShader);
-	return id;
-}
-
-#endif // INCLUDE_VECTOR_INT_3
-
-Templates::Growable<VertShaderI2> CAGE::ShadersI2_vert;
-
-ShaderID RecognizeShader(VertShaderI2 vertexShader, FragShaderI2 fragShader)
-{
-	ShaderID id;
-	id.type = ShaderID::Type::i2;
-	id.vsID = CAGE::ShadersI2_vert.Push(vertexShader);
-	id.fsID = CAGE::ShadersI2_frag.Push(fragShader);
-	return id;
-}
-
-#endif // INCLUDE_VECTOR_INT_2
-
-#ifdef INCLUDE_VECTOR_FLT_2
-
-Templates::Growable<FragShaderF2> CAGE::ShadersF2_frag;
-
-#ifdef INCLUDE_VECTOR_FLT_3
-
-Templates::Growable<VertShaderF3> CAGE::ShadersF3_vert;
-
-ShaderID RecognizeShader(VertShaderF3 vertexShader, FragShaderF2 fragShader)
-{
-	ShaderID id;
-	id.type = ShaderID::Type::f3;
-	id.vsID = CAGE::ShadersF3_vert.Push(vertexShader);
-	id.fsID = CAGE::ShadersF2_frag.Push(fragShader);
-	return id;
-}
-
-#endif // INCLUDE_VECTOR_FLT_3
-
-Templates::Growable<VertShaderF2> CAGE::ShadersF2_vert;
-
-ShaderID RecognizeShader(VertShaderF2 vertexShader, FragShaderF2 fragShader)
-{
-	ShaderID id;
-	id.type = ShaderID::Type::f2;
-	id.vsID = CAGE::ShadersF2_vert.Push(vertexShader);
-	id.fsID = CAGE::ShadersF2_frag.Push(fragShader);
-	return id;
-}
-
-#endif // INCLUDE_VECTOR_FLT_2
-
-void RecordDrawCallsForCulling()
-{
-	// Todo
-}
-
-void DisplayDrawnFrame()
+void Display(const Texture* tex)
 {
 	SetCursor(0,0);
-	Print(CAGE::frame.tex);
+	Print(tex->tex);
 }

@@ -2,14 +2,12 @@
 
 int main()
 {
-	SetFrameDimensions(32, 16);
-	SetColorRamp(" -+#", sizeof(" -+#") - 1);
-	ClearFrame(1);
+	Texture frame = CreateTexture(32, 16);
+	SetColorRamp(" -+#", 4);
 
-	DrawPixel(5,5,0);
-	DrawRectangle(7,5,7,3,0);
+	SetTexturePixel();
 
-	DisplayDrawnFrame();
+	Display(&frame);
 
 	return 0;
 }

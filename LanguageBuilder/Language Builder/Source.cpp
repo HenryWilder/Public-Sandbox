@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_set>
 #include <stack>
-#include <time.h>
+#include <time.h> // For choosing a random seed
 
 #define RAND_ELEMENT(arr) arr[rand() % arr.size()]
 

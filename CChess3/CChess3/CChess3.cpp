@@ -9,7 +9,7 @@ float Lerp(float a, float b, float t)
 {
     return a + t * (b - a);
 }
-
+ 
 struct Animation
 {
     Animation()
@@ -31,8 +31,8 @@ struct Animation
     void Generate()
     {
         start = end;
-        control = 3.0f * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
-        end = 3.0f * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
+        control = 6.0f * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
+        end = 6.0f * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
     }
     float Sample() const
     {
@@ -112,7 +112,7 @@ struct VectorGraphic
     }
 };
 
-void DrawVectorGraphic(const VectorGraphic& vg, LONG x, LONG y)
+void DrawVectorGraphic(const VectorGraphic& vg, int x, int y)
 {
     for (const Triangle& tri : vg.paths)
     {
@@ -121,8 +121,8 @@ void DrawVectorGraphic(const VectorGraphic& vg, LONG x, LONG y)
         POINT apt[3];
         for (int i = 0; i < 3; ++i)
         {
-            apt[i].x = tri.apt[i].x + x + (LONG)(tri.ptAnim[i][0].Sample() + 0.5f);
-            apt[i].y = tri.apt[i].y + y + (LONG)(tri.ptAnim[i][1].Sample() + 0.5f);
+            apt[i].x = tri.apt[i].x + (LONG)x + (LONG)(tri.ptAnim[i][0].Sample() + 0.5f);
+            apt[i].y = tri.apt[i].y + (LONG)y + (LONG)(tri.ptAnim[i][1].Sample() + 0.5f);
         }
         Polygon(g_hdc, apt, 3);
         DeleteObject(hBrush);
@@ -141,7 +141,14 @@ int main()
 
     for (int i = 0; i < 800; ++i)
     {
-        DrawVectorGraphic(pawn, 100, 100);
+        {
+            HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+            SelectObject(g_hdc, hBrush);
+            Rectangle(g_hdc, 0, 0, 200, 100);
+            DeleteObject(hBrush);
+        }
+        DrawVectorGraphic(pawn, 000, 0);
+        DrawVectorGraphic(pawn, 100, 0);
 
         Sleep(8);
 

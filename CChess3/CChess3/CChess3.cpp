@@ -23,16 +23,20 @@ struct Animation
 
     static void Tick()
     {
-        constexpr float tick = (1.0f / 120.0f);
+        constexpr float tick = (1.0f / 60.0f);
         t += tick;
         if (t >= 1.0f)
             t = 0.0f;
     }
+    float Random()
+    {
+        return 6.0f * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
+    }
     void Generate()
     {
         start = end;
-        control = 6.0f * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
-        end = 6.0f * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
+        control = Random();
+        end = Random();
     }
     float Sample() const
     {
@@ -112,7 +116,7 @@ struct VectorGraphic
     }
 };
 
-void DrawVectorGraphic(const VectorGraphic& vg, int x, int y)
+void DrawVectorGraphic(const VectorGraphic& vg, int x, int y, float scale = 1.0f)
 {
     for (const Triangle& tri : vg.paths)
     {
@@ -121,8 +125,8 @@ void DrawVectorGraphic(const VectorGraphic& vg, int x, int y)
         POINT apt[3];
         for (int i = 0; i < 3; ++i)
         {
-            apt[i].x = tri.apt[i].x + (LONG)x + (LONG)(tri.ptAnim[i][0].Sample() + 0.5f);
-            apt[i].y = tri.apt[i].y + (LONG)y + (LONG)(tri.ptAnim[i][1].Sample() + 0.5f);
+            apt[i].x = (tri.apt[i].x * scale + (LONG)x + (LONG)(tri.ptAnim[i][0].Sample() + 0.5f));
+            apt[i].y = (tri.apt[i].y * scale + (LONG)y + (LONG)(tri.ptAnim[i][1].Sample() + 0.5f));
         }
         Polygon(g_hdc, apt, 3);
         DeleteObject(hBrush);
@@ -138,19 +142,44 @@ int main()
     SelectObject(g_hdc, hPen);
 
     VectorGraphic pawn("pawn");
+    VectorGraphic* graphic[64] = {
+        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+          &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,
+        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+          &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,
+        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+    };
 
     for (int i = 0; i < 800; ++i)
     {
-        {
-            HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-            SelectObject(g_hdc, hBrush);
-            Rectangle(g_hdc, 0, 0, 200, 100);
-            DeleteObject(hBrush);
-        }
-        DrawVectorGraphic(pawn, 000, 0);
-        DrawVectorGraphic(pawn, 100, 0);
+        HBRUSH blackBrush = CreateSolidBrush(RGB(0, 0, 0));
+        HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
 
-        Sleep(8);
+        SelectObject(g_hdc, blackBrush);
+        Rectangle(g_hdc, 0,0,400,400);
+
+        for (int i = 0; i < 64; ++i)
+        {
+            int x = (i % 8);
+            int y = (i / 8);
+
+            if ((x + y) & 1)
+            {
+                SelectObject(g_hdc, whiteBrush);
+                Rectangle(g_hdc, 50 * x, 50 * y, 50 * x + 50, 50 * y + 50);
+            }
+
+            if (graphic[i] != nullptr)
+                DrawVectorGraphic(*graphic[i], 50 * x, 50 * y, 0.5f);
+        }
+
+        DeleteObject(blackBrush);
+        DeleteObject(whiteBrush);
+
+        Sleep(16);
 
         Animation::Tick();
         if (Animation::t == 0.0f)

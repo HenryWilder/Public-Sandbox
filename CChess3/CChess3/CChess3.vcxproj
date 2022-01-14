@@ -141,6 +141,9 @@
   <ItemGroup>
     <ClCompile Include="CChess3.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="pawn" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

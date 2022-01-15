@@ -3,13 +3,37 @@
 #include <vector>
 #include <fstream>
 
+// Named values
+namespace named
+{
+    constexpr LONG g_spaceWidth = 50;
+}
+COLORREF g_palette[2][5] = {
+    // White
+    {
+        RGB(89, 11, 14),
+        RGB(119, 14, 18),
+        RGB(178, 21, 27),
+        RGB(237, 28, 36),
+        RGB(241, 73, 80)
+    },
+    // Black
+    {
+        RGB(89, 11, 14),
+        RGB(119, 14, 18),
+        RGB(178, 21, 27),
+        RGB(237, 28, 36),
+        RGB(241, 73, 80)
+    },
+};
+
 HDC g_hdc;
 
 float Lerp(float a, float b, float t)
 {
     return a + t * (b - a);
 }
- 
+
 struct Animation
 {
     Animation()
@@ -47,34 +71,18 @@ float Animation::t = 0.0f;
 
 struct Triangle
 {
-    Triangle(std::ifstream& stream)
+    Triangle(std::ifstream& stream, float scale)
     {
-        {
-            int r, g, b;
-            stream >> r >> g >> b;
-            color = RGB(r, g, b);
-        }
+        stream >> colorID;
         for (int i = 0; i < 3; ++i)
         {
             stream >> apt[i].x >> apt[i].y;
+            apt[i].x = (LONG)((float)apt[i].x * scale);
+            apt[i].y = (LONG)((float)apt[i].y * scale);
         }
     }
-    Triangle(
-        int r, int g, int b,
-        LONG x0, LONG y0,
-        LONG x1, LONG y1,
-        LONG x2, LONG y2)
-    {
-        color = RGB(r,g,b);
-        apt[0].x = x0;
-        apt[0].y = y0;
-        apt[1].x = x1;
-        apt[1].y = y1;
-        apt[2].x = x2;
-        apt[2].y = y2;
-    }
 
-    COLORREF color;
+    int colorID;
     POINT apt[3];
     Animation ptAnim[3][2];
 
@@ -95,11 +103,15 @@ struct VectorGraphic
     {
         std::ifstream file(filename);
 
+        float scale;
+        file >> scale;
+        scale = named::g_spaceWidth / scale;
+
         unsigned int count;
         file >> count;
         for (unsigned int i = 0; i < count; ++i)
         {
-            paths.emplace_back(file);
+            paths.emplace_back(file, scale);
         }
 
         file.close();
@@ -116,17 +128,17 @@ struct VectorGraphic
     }
 };
 
-void DrawVectorGraphic(const VectorGraphic& vg, int x, int y, float scale = 1.0f)
+void DrawVectorGraphic(const VectorGraphic& vg, int x, int y)
 {
     for (const Triangle& tri : vg.paths)
     {
-        HBRUSH hBrush = CreateSolidBrush(tri.color);
+        HBRUSH hBrush = CreateSolidBrush(g_palette[0][tri.colorID]);
         SelectObject(g_hdc, hBrush);
         POINT apt[3];
         for (int i = 0; i < 3; ++i)
         {
-            apt[i].x = (tri.apt[i].x * scale + (LONG)x + (LONG)(tri.ptAnim[i][0].Sample() + 0.5f));
-            apt[i].y = (tri.apt[i].y * scale + (LONG)y + (LONG)(tri.ptAnim[i][1].Sample() + 0.5f));
+            apt[i].x = (tri.apt[i].x + (LONG)x + (LONG)(tri.ptAnim[i][0].Sample() + 0.5f));
+            apt[i].y = (tri.apt[i].y + (LONG)y + (LONG)(tri.ptAnim[i][1].Sample() + 0.5f));
         }
         Polygon(g_hdc, apt, 3);
         DeleteObject(hBrush);
@@ -153,38 +165,68 @@ int main()
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
     };
 
-    for (int i = 0; i < 800; ++i)
+
+    HBRUSH blackBrush = CreateSolidBrush(RGB(0, 0, 0));
+    HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+
+    SelectObject(g_hdc, blackBrush);
+    Rectangle(g_hdc, 0, 0, 401, 401);
+
+    for (int i = 0; i < 64; ++i)
     {
-        HBRUSH blackBrush = CreateSolidBrush(RGB(0, 0, 0));
-        HBRUSH whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+        int x = (i % 8);
+        int y = (i / 8);
 
-        SelectObject(g_hdc, blackBrush);
-        Rectangle(g_hdc, 0,0,400,400);
-
-        for (int i = 0; i < 64; ++i)
+        if ((x + y) & 1)
         {
-            int x = (i % 8);
-            int y = (i / 8);
-
-            if ((x + y) & 1)
-            {
-                SelectObject(g_hdc, whiteBrush);
-                Rectangle(g_hdc, 50 * x, 50 * y, 50 * x + 50, 50 * y + 50);
-            }
-
-            if (graphic[i] != nullptr)
-                DrawVectorGraphic(*graphic[i], 50 * x, 50 * y, 0.5f);
+            SelectObject(g_hdc, whiteBrush);
+            Rectangle(g_hdc, named::g_spaceWidth * x, named::g_spaceWidth * y, named::g_spaceWidth * (x + 1) + 1, named::g_spaceWidth * (y + 1) + 1);
         }
 
-        DeleteObject(blackBrush);
-        DeleteObject(whiteBrush);
+        if (graphic[i] != nullptr)
+            DrawVectorGraphic(*graphic[i], named::g_spaceWidth * x, named::g_spaceWidth * y);
+    }
 
-        Sleep(16);
+
+    HBRUSH select = CreateSolidBrush(RGB(0, 255, 0));
+    SelectObject(g_hdc, select);
+
+    POINT cursor;
+
+    while (true)
+    {
+        GetCursorPos(&cursor);
+        ScreenToClient(hWnd, &cursor);
+        cursor.x /= named::g_spaceWidth;
+        cursor.y /= named::g_spaceWidth;
+
+        if (cursor.x >= 0 && cursor.x < 8 &&
+            cursor.y >= 0 && cursor.y < 8)
+        {
+            // Boardspace
+            SelectObject(g_hdc, ((cursor.x + cursor.y) & 1 ? whiteBrush : blackBrush));
+            int i = cursor.y * 8 + cursor.x;
+
+            // Convert
+            cursor.x *= named::g_spaceWidth;
+            cursor.y *= named::g_spaceWidth;
+
+            // Screenspace
+            Rectangle(g_hdc, cursor.x, cursor.y, cursor.x + named::g_spaceWidth + 1, cursor.y + named::g_spaceWidth + 1);
+            if (graphic[i] != nullptr)
+                DrawVectorGraphic(*graphic[i], cursor.x, cursor.y);
+        }
 
         Animation::Tick();
         if (Animation::t == 0.0f)
             pawn.Anim_Generate();
+
+        Sleep(16);
     }
+
+    DeleteObject(blackBrush);
+    DeleteObject(whiteBrush);
+    DeleteObject(select);
 
     DeleteObject(hPen);
 

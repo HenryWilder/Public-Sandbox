@@ -11,7 +11,7 @@ namespace named
 COLORREF g_palette[2][5] = {
     // White
     {
-        RGB(89, 11, 14),
+        RGB(59, 7, 9),
         RGB(119, 14, 18),
         RGB(178, 21, 27),
         RGB(237, 28, 36),
@@ -19,11 +19,11 @@ COLORREF g_palette[2][5] = {
     },
     // Black
     {
-        RGB(89, 11, 14),
-        RGB(119, 14, 18),
-        RGB(178, 21, 27),
-        RGB(237, 28, 36),
-        RGB(241, 73, 80)
+        RGB(9, 7, 59),
+        RGB(18, 14, 119),
+        RGB(27, 21, 178),
+        RGB(36, 28, 237),
+        RGB(80, 73, 241)
     },
 };
 
@@ -54,7 +54,7 @@ struct Animation
     }
     float Random()
     {
-        return 6.0f * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
+        return 2.0f * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
     }
     void Generate()
     {
@@ -128,11 +128,11 @@ struct VectorGraphic
     }
 };
 
-void DrawVectorGraphic(const VectorGraphic& vg, int x, int y)
+void DrawVectorGraphic(const VectorGraphic& vg, int x, int y, int team)
 {
     for (const Triangle& tri : vg.paths)
     {
-        HBRUSH hBrush = CreateSolidBrush(g_palette[0][tri.colorID]);
+        HBRUSH hBrush = CreateSolidBrush(g_palette[team & 1][tri.colorID]);
         SelectObject(g_hdc, hBrush);
         POINT apt[3];
         for (int i = 0; i < 3; ++i)
@@ -145,6 +145,37 @@ void DrawVectorGraphic(const VectorGraphic& vg, int x, int y)
     }
 }
 
+VectorGraphic g_graphics[6] = {
+    VectorGraphic("pawn.cc3asset"),
+    VectorGraphic("rook.cc3asset"),
+    VectorGraphic("knight.cc3asset"),
+    VectorGraphic("bishop.cc3asset"),
+    VectorGraphic("queen.cc3asset"),
+    VectorGraphic("king.cc3asset")
+};
+
+enum class UnitType
+{
+    pawn = 0,
+    rook = 1,
+    knight = 2,
+    bishop = 3,
+    queen = 4,
+    king = 5,
+};
+struct Unit
+{
+    Unit(UnitType _type, int _team) : team(_team), type(_type) {}
+
+    int team;
+    UnitType type;
+    
+    VectorGraphic* GetGraphic() const
+    {
+        return g_graphics + (int)type;
+    }
+};
+
 int main()
 {
     HWND hWnd = GetConsoleWindow();
@@ -153,15 +184,30 @@ int main()
     HPEN hPen = CreatePen(PS_NULL, 0, RGB(0, 0, 0));
     SelectObject(g_hdc, hPen);
 
-    VectorGraphic pawn("pawn");
-    VectorGraphic* graphic[64] = {
+    Unit units[12] = {
+        Unit(UnitType::pawn, 0),
+        Unit(UnitType::rook, 0),
+        Unit(UnitType::knight, 0),
+        Unit(UnitType::bishop, 0),
+        Unit(UnitType::queen, 0),
+        Unit(UnitType::king, 0),
+
+        Unit(UnitType::pawn, 1),
+        Unit(UnitType::rook, 1),
+        Unit(UnitType::knight, 1),
+        Unit(UnitType::bishop, 1),
+        Unit(UnitType::queen, 1),
+        Unit(UnitType::king, 1),
+    };
+
+    Unit* board[64] = {
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
-          &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,
+        units + 0,  units + 0, units + 0, units + 0, units + 0,  units + 0, units + 0, units + 0,
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
-          &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,  &pawn,
+        units + 6,  units + 6, units + 6, units + 6, units + 6,  units + 6, units + 6, units + 6,
         nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
     };
 
@@ -183,8 +229,8 @@ int main()
             Rectangle(g_hdc, named::g_spaceWidth * x, named::g_spaceWidth * y, named::g_spaceWidth * (x + 1) + 1, named::g_spaceWidth * (y + 1) + 1);
         }
 
-        if (graphic[i] != nullptr)
-            DrawVectorGraphic(*graphic[i], named::g_spaceWidth * x, named::g_spaceWidth * y);
+        if (board[i] != nullptr)
+            DrawVectorGraphic(*board[i]->GetGraphic(), named::g_spaceWidth * x, named::g_spaceWidth * y, board[i]->team);
     }
 
 
@@ -213,13 +259,17 @@ int main()
 
             // Screenspace
             Rectangle(g_hdc, cursor.x, cursor.y, cursor.x + named::g_spaceWidth + 1, cursor.y + named::g_spaceWidth + 1);
-            if (graphic[i] != nullptr)
-                DrawVectorGraphic(*graphic[i], cursor.x, cursor.y);
+            if (board[i] != nullptr)
+                DrawVectorGraphic(*board[i]->GetGraphic(), cursor.x, cursor.y, board[i]->team);
+
         }
 
-        Animation::Tick();
-        if (Animation::t == 0.0f)
-            pawn.Anim_Generate();
+        for (int i = 0; i < 12; ++i)
+        {
+            Animation::Tick();
+            if (Animation::t == 0.0f)
+                units[i].GetGraphic()->Anim_Generate();
+        }
 
         Sleep(16);
     }

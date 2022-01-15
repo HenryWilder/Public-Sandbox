@@ -6,7 +6,7 @@
 // Named values
 namespace named
 {
-    constexpr LONG g_spaceWidth = 50;
+    constexpr LONG g_spaceWidth = 100;
 }
 COLORREF g_palette[2][6] = {
     // White
@@ -51,13 +51,13 @@ struct Animation
 
     static void Tick()
     {
-        t += (1.0f / Lerp(60.0f, 15.0f, agitation));
+        t += (1.0f / Lerp(60.0f, 20.0f, agitation));
         if (t >= 1.0f)
             t = 0.0f;
     }
     static float Random()
     {
-        return Lerp(5.0f * ((float)named::g_spaceWidth / 100.0f), 10.0f * ((float)named::g_spaceWidth / 100.0f), agitation) * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
+        return Lerp(5.0f * (100.0f / (float)named::g_spaceWidth), 15.0f * (100.0f / (float)named::g_spaceWidth), agitation) * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
     }
     void Generate()
     {
@@ -332,7 +332,7 @@ int main()
 
     HBRUSH blackBrush = CreateSolidBrush(g_palette[1][5]);
     HBRUSH whiteBrush = CreateSolidBrush(g_palette[0][5]);
-    HBRUSH select = CreateSolidBrush(RGB(0, 255, 0));
+    HBRUSH select = CreateSolidBrush(RGB(0, 50, 200));
 
     POINT cursor = { 0,0 }; // Location of the mouse (space changes as needed)
     POINT space = cursor; // Most recent space the cursor was hovering
@@ -405,6 +405,11 @@ int main()
                 DrawBoardSpace(cursor.x, cursor.y, CheckerBrush(i, whiteBrush, blackBrush), true);
             }
 
+            if (selectedSpace != -1)
+                Animation::agitation = 1.0f;
+            else
+                Animation::agitation = 0.0f;
+
             // Update animation (if there is a unit to update the animation of)
             Animation::Tick();
             if (Animation::t == 0.0f)
@@ -412,7 +417,7 @@ int main()
                 if (!!g_board[i])
                     g_board[i]->GetGraphic()->Anim_Generate();
 
-                if (selectedSpace != -1 && !!g_board[selectedSpace])
+                if (selectedSpace != -1 && !!g_board[selectedSpace] && g_board[selectedSpace] != g_board[i])
                     g_board[selectedSpace]->GetGraphic()->Anim_Generate();
             }
         }

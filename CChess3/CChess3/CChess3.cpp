@@ -194,15 +194,7 @@ struct Unit
     }
 };
 
-int main()
-{
-    HWND hWnd = GetConsoleWindow();
-    g_hdc = GetDC(hWnd);
-
-    HPEN hPen = CreatePen(PS_NULL, 0, RGB(0, 0, 0));
-    SelectObject(g_hdc, hPen);
-
-    Unit units[12] = {
+Unit g_units[12] = {
         Unit(UnitType::pawn, 0),
         Unit(UnitType::rook, 0),
         Unit(UnitType::knight, 0),
@@ -216,18 +208,37 @@ int main()
         Unit(UnitType::bishop, 1),
         Unit(UnitType::queen, 1),
         Unit(UnitType::king, 1),
-    };
+};
 
-    Unit* board[64] = {
-        units + 1,  units + 2, units + 3, units + 4, units + 5,  units + 3, units + 2, units + 1,
-        units + 0,  units + 0, units + 0, units + 0, units + 0,  units + 0, units + 0, units + 0,
-        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
-        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
-        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
-        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
-        units + 6,  units + 6, units + 6, units + 6, units + 6,  units + 6, units + 6, units + 6,
-        units + 7,  units + 8, units + 9, units + 10, units + 11,  units + 9, units + 8, units + 7,
-    };
+Unit* g_board[64] = {
+    g_units + 1,  g_units + 2, g_units + 3, g_units + 4, g_units + 5,  g_units + 3, g_units + 2, g_units + 1,
+    g_units + 0,  g_units + 0, g_units + 0, g_units + 0, g_units + 0,  g_units + 0, g_units + 0, g_units + 0,
+    nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+    nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+    nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+    nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
+    g_units + 6,  g_units + 6, g_units + 6, g_units + 6, g_units + 6,  g_units + 6, g_units + 6, g_units + 6,
+    g_units + 7,  g_units + 8, g_units + 9, g_units + 10, g_units + 11,  g_units + 9, g_units + 8, g_units + 7,
+};
+
+void DrawBoardSpace(int x, int y, HBRUSH backgroundColor, bool animate)
+{
+    int index = y * 8 + x;
+    x *= named::g_spaceWidth;
+    y *= named::g_spaceWidth;
+    SelectObject(g_hdc, backgroundColor);
+    Rectangle(g_hdc, x, y, x + named::g_spaceWidth + 1, y + named::g_spaceWidth + 1);
+    if (g_board[index])
+        (animate ? DrawVectorGraphicAnimated : DrawVectorGraphic)(*g_board[index]->GetGraphic(), x, y, g_board[index]->team);
+}
+
+int main()
+{
+    HWND hWnd = GetConsoleWindow();
+    g_hdc = GetDC(hWnd);
+
+    HPEN hPen = CreatePen(PS_NULL, 0, RGB(0, 0, 0));
+    SelectObject(g_hdc, hPen);
 
 
     HBRUSH blackBrush = CreateSolidBrush(g_palette[1][5]);
@@ -247,8 +258,8 @@ int main()
             Rectangle(g_hdc, named::g_spaceWidth * x, named::g_spaceWidth * y, named::g_spaceWidth * (x + 1) + 1, named::g_spaceWidth * (y + 1) + 1);
         }
 
-        if (board[i] != nullptr)
-            DrawVectorGraphic(*board[i]->GetGraphic(), named::g_spaceWidth * x, named::g_spaceWidth * y, board[i]->team);
+        if (g_board[i] != nullptr)
+            DrawVectorGraphic(*g_board[i]->GetGraphic(), named::g_spaceWidth * x, named::g_spaceWidth * y, g_board[i]->team);
     }
 
 
@@ -257,6 +268,7 @@ int main()
 
     POINT cursor = { 0,0 };
     POINT space = cursor;
+    int selectionSpace = -1;
 
     while (true)
     {
@@ -268,7 +280,7 @@ int main()
         if (cursor.x >= 0 && cursor.x < 8 &&
             cursor.y >= 0 && cursor.y < 8)
         {
-
+            // Clean up last space
             if (space.x != cursor.x || space.y != cursor.y)
             {
                 SelectObject(g_hdc, ((space.x + space.y) & 1 ? whiteBrush : blackBrush));
@@ -278,24 +290,41 @@ int main()
                 space.y *= named::g_spaceWidth;
 
                 Rectangle(g_hdc, space.x, space.y, space.x + named::g_spaceWidth + 1, space.y + named::g_spaceWidth + 1);
-                if (board[j])
-                    DrawVectorGraphic(*board[j]->GetGraphic(), space.x, space.y, board[j]->team);
+                if (g_board[j])
+                    DrawVectorGraphic(*g_board[j]->GetGraphic(), space.x, space.y, g_board[j]->team);
 
                 space = cursor;
             }
 
-            // Boardspace
-            SelectObject(g_hdc, ((cursor.x + cursor.y) & 1 ? whiteBrush : blackBrush));
             int i = cursor.y * 8 + cursor.x;
 
             // Convert
             cursor.x *= named::g_spaceWidth;
             cursor.y *= named::g_spaceWidth;
 
-            // Screenspace
+            if (GetKeyState(VK_LBUTTON) & 0x80)
+            {
+                selectionSpace = i;
+            }
+
+            SelectObject(g_hdc, ((cursor.x + cursor.y) & 1 ? whiteBrush : blackBrush));
             Rectangle(g_hdc, cursor.x, cursor.y, cursor.x + named::g_spaceWidth + 1, cursor.y + named::g_spaceWidth + 1);
-            if (board[i] != nullptr)
-                DrawVectorGraphicAnimated(*board[i]->GetGraphic(), cursor.x, cursor.y, board[i]->team);
+            if (selectionSpace != -1)
+            {
+                POINT selectionPoint;
+                selectionPoint.x = (selectionSpace % 8) * named::g_spaceWidth;
+                selectionPoint.y = (selectionSpace / 8) * named::g_spaceWidth;
+                SelectObject(g_hdc, select);
+                Rectangle(g_hdc, selectionPoint.x, selectionPoint.y, selectionPoint.x + named::g_spaceWidth + 1, selectionPoint.y + named::g_spaceWidth + 1);
+                if (g_board[selectionSpace])
+                    DrawVectorGraphicAnimated(*g_board[selectionSpace]->GetGraphic(), selectionPoint.x, selectionPoint.y, g_board[selectionSpace]->team);
+            }
+
+
+
+            // Screenspace
+            if (g_board[i] != nullptr)
+                DrawVectorGraphicAnimated(*g_board[i]->GetGraphic(), cursor.x, cursor.y, g_board[i]->team);
         }
 
         Animation::Tick();
@@ -303,7 +332,7 @@ int main()
         {
             for (int i = 0; i < 12; ++i)
             {
-                units[i].GetGraphic()->Anim_Generate();
+                g_units[i].GetGraphic()->Anim_Generate();
             }
         }
 

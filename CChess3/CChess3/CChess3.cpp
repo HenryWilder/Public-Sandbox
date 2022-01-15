@@ -6,7 +6,7 @@
 // Named values
 namespace named
 {
-    constexpr LONG g_spaceWidth = 100;
+    constexpr LONG g_spaceWidth = 50;
 }
 COLORREF g_palette[2][6] = {
     // White
@@ -57,7 +57,7 @@ struct Animation
     }
     static float Random()
     {
-        return Lerp(5.0f * (100.0f / (float)named::g_spaceWidth), 15.0f * (100.0f / (float)named::g_spaceWidth), agitation) * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
+        return Lerp(5.0f * ((float)named::g_spaceWidth / 100.0f), 15.0f * ((float)named::g_spaceWidth / 100.0f), agitation) * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
     }
     void Generate()
     {
@@ -157,35 +157,59 @@ struct VectorGraphic
 
 void DrawVectorGraphicAnimated(const VectorGraphic& vg, int x, int y, int team)
 {
+    int colorID = -1;
+    HBRUSH hBrush = CreateSolidBrush(g_palette[team & 1][0]);
     for (const Triangle& tri : vg.paths)
     {
-        HBRUSH hBrush = CreateSolidBrush(g_palette[team & 1][tri.colorID]);
-        SelectObject(g_hdc, hBrush);
+        if (colorID != tri.colorID)
+        {
+            colorID = tri.colorID;
+
+            if (colorID != -1)
+                DeleteObject(hBrush);
+
+            hBrush = CreateSolidBrush(g_palette[team & 1][colorID]);
+            SelectObject(g_hdc, hBrush);
+        }
+
         POINT apt[3];
         for (int i = 0; i < 3; ++i)
         {
             apt[i].x = (tri.apt[i].x + (LONG)x + (LONG)(tri.ptAnim[i][0].Sample() + 0.5f));
             apt[i].y = (tri.apt[i].y + (LONG)y + (LONG)(tri.ptAnim[i][1].Sample() + 0.5f));
         }
+
         Polygon(g_hdc, apt, 3);
-        DeleteObject(hBrush);
     }
+    DeleteObject(hBrush);
 }
 void DrawVectorGraphic(const VectorGraphic& vg, int x, int y, int team)
 {
+    int colorID = -1;
+    HBRUSH hBrush = CreateSolidBrush(g_palette[team & 1][0]);
     for (const Triangle& tri : vg.paths)
     {
-        HBRUSH hBrush = CreateSolidBrush(g_palette[team & 1][tri.colorID]);
-        SelectObject(g_hdc, hBrush);
+        if (colorID != tri.colorID)
+        {
+            colorID = tri.colorID;
+
+            if (colorID != -1)
+                DeleteObject(hBrush);
+
+            hBrush = CreateSolidBrush(g_palette[team & 1][colorID]);
+            SelectObject(g_hdc, hBrush);
+        }
+
         POINT apt[3];
         for (int i = 0; i < 3; ++i)
         {
             apt[i].x = (tri.apt[i].x + (LONG)x);
             apt[i].y = (tri.apt[i].y + (LONG)y);
         }
+
         Polygon(g_hdc, apt, 3);
-        DeleteObject(hBrush);
     }
+    DeleteObject(hBrush);
 }
 
 VectorGraphic g_graphics[6] = {
@@ -322,6 +346,14 @@ void DrawBoardSpace(int index, HBRUSH backgroundColor, bool animate)
     DrawBoardSpace(space.x, space.y, backgroundColor, animate);
 }
 
+struct SpaceDrawingData
+{
+    POINT space;
+    HBRUSH background;
+    Unit* unitAtSpace;
+    bool animated;
+};
+
 int main()
 {
     HWND hWnd = GetConsoleWindow();
@@ -333,14 +365,19 @@ int main()
     HBRUSH blackBrush = CreateSolidBrush(g_palette[1][5]);
     HBRUSH whiteBrush = CreateSolidBrush(g_palette[0][5]);
     HBRUSH select = CreateSolidBrush(RGB(0, 50, 200));
+    HBRUSH highlight = CreateSolidBrush(RGB(200, 200, 0));
 
     POINT cursor = { 0,0 }; // Location of the mouse (space changes as needed)
     POINT space = cursor; // Most recent space the cursor was hovering
-    int selectedSpace = -1; // Index of the space selected
     bool downDirty = true; // A bit of a hack because I can't figure out how to test when the mouse is pressed, only when it's down.
+    bool b_mousePressed = false;
     int turn = 0;
 
-    // Draw board spaces
+    std::vector<int> spacesToClean;
+    int hoveredSpace = -1; // Index of the space hovered
+    int selectedSpace = -1; // Index of the space selected
+
+    // Draw board
     for (int i = 0; i < 64; ++i)
     {
         POINT space = IndexToBoard(i);
@@ -350,80 +387,120 @@ int main()
     // Game loop
     while (true)
     {
+        // UPDATE VARIABLES
+
         GetCursorPos(&cursor);
         ScreenToClient(hWnd, &cursor);
         ScreenToBoard(&cursor);
 
-        if (IsSpaceOnBoard(cursor))
         {
-            bool b_moved = (space.x != cursor.x || space.y != cursor.y);
+            if (downDirty == false)
+                b_mousePressed = false;
 
-            // Mouse moved to a new space
-            if (b_moved)
+            if (GetKeyState(VK_LBUTTON) & 0x80 && downDirty) // On mouse press
             {
-                DrawBoardSpace(space.x, space.y, CheckerBrush(space.x, space.y, whiteBrush, blackBrush), false);
-                space = cursor;
+                downDirty = false; // Mark that we have handled the current click
+                b_mousePressed = true;
             }
+            else if (!(GetKeyState(VK_LBUTTON) & 0x80)) // Mouse is up
+                downDirty = true; // We are allowed to handle clicks next frame
+        }
 
-            // Get space index
-            int i = BoardToIndex(cursor);
+        // Check if the mouse has moved to a new board space
+        bool b_moved = (space.x != cursor.x || space.y != cursor.y);
 
-            // Reset the animation
-            if (b_moved && !!g_board[i])
-                g_board[i]->GetGraphic()->Anim_Zero();
+        bool b_onBoard = IsSpaceOnBoard(cursor);
 
-            // Select clicked space
-            if (GetKeyState(VK_LBUTTON) & 0x80 && downDirty)
+        if (b_onBoard)
+            hoveredSpace = BoardToIndex(cursor);
+        else
+            hoveredSpace = -1;
+
+        // Mouse moved to a new space
+        if (b_moved)
+        {
+            // Clean up the previous space
+            spacesToClean.push_back(BoardToIndex(space));
+            space = cursor;
+
+            // Reset the animation for the new space
+            if (hoveredSpace != -1 && b_onBoard && !!g_board[hoveredSpace])
+                g_board[hoveredSpace]->GetGraphic()->Anim_Zero();
+        }
+
+        // Selection
+        if (b_mousePressed && b_onBoard) // On mouse press
+        {
+            if (!!g_board[hoveredSpace] && (g_board[hoveredSpace]->team & 1) == (turn & 1)) // Check if selection is allowed
             {
-                downDirty = false;
-
-                // Clean previously selected space
-                if (selectedSpace != -1)
+                if (selectedSpace != -1) // There is already a selection
                 {
-                    if (selectedSpace == i) // Click selected space
-                        selectedSpace = -1;
-                    else
+                    spacesToClean.push_back(selectedSpace); // Clean previously selected space
+                    if (selectedSpace == hoveredSpace) // Click selected space
                     {
-                        POINT selected = IndexToBoard(selectedSpace);
-                        DrawBoardSpace(selected.x, selected.y, CheckerBrush(selected.x, selected.y, whiteBrush, blackBrush), false);
-                        selectedSpace = i; // Select current space
+                        selectedSpace = -1; // Clear the selection
+                    }
+                    else // The selection is at a different space - piece can move!
+                    {
+                        selectedSpace = hoveredSpace; // Select current space
                     }
                 }
-                else
-                    selectedSpace = i; // Select current space
+                else // There is no selection
+                {
+                    selectedSpace = hoveredSpace; // Select current space
+                }
             }
-            else if (!(GetKeyState(VK_LBUTTON) & 0x80))
-                downDirty = true;
-
-            // Draw the current space
-            if (selectedSpace == i)
-                DrawBoardSpace(cursor.x, cursor.y, select, true);
             else
             {
                 if (selectedSpace != -1)
-                    DrawBoardSpace(selectedSpace, select, true);
+                    spacesToClean.push_back(selectedSpace); // Clean previously selected space
 
-                DrawBoardSpace(cursor.x, cursor.y, CheckerBrush(i, whiteBrush, blackBrush), true);
-            }
-
-            if (selectedSpace != -1)
-                Animation::agitation = 1.0f;
-            else
-                Animation::agitation = 0.0f;
-
-            // Update animation (if there is a unit to update the animation of)
-            Animation::Tick();
-            if (Animation::t == 0.0f)
-            {
-                if (!!g_board[i])
-                    g_board[i]->GetGraphic()->Anim_Generate();
-
-                if (selectedSpace != -1 && !!g_board[selectedSpace] && g_board[selectedSpace] != g_board[i])
-                    g_board[selectedSpace]->GetGraphic()->Anim_Generate();
+                selectedSpace = -1;
             }
         }
 
-        Sleep(16);
+
+        // DRAW THE FRAME
+
+        for (int clean : spacesToClean)
+        {
+            DrawBoardSpace(clean, CheckerBrush(clean, whiteBrush, blackBrush), false);
+        }
+        spacesToClean.clear();
+
+        if (selectedSpace != -1 && selectedSpace != hoveredSpace)
+            DrawBoardSpace(selectedSpace, select, true);
+
+        if (hoveredSpace != -1)
+            DrawBoardSpace(hoveredSpace, (selectedSpace != -1 ? (selectedSpace == hoveredSpace ? select : highlight) : CheckerBrush(hoveredSpace, whiteBrush, blackBrush)), true);
+
+        // UPDATE ANIMATION
+
+        // TODO: Make agitation based on whether a piece can move to a space or not
+        //if (selectedSpace != -1)
+        //    Animation::agitation = 1.0f;
+        //else
+        //    Animation::agitation = 0.0f;
+
+
+        Animation::Tick(); // Mark that the frame has passed
+        if (Animation::t == 0.0f) // The animation time has been reset
+        {
+            if (hoveredSpace != -1 && !!g_board[hoveredSpace]) // If there is a piece at the space being hovered
+            {
+                g_board[hoveredSpace]->GetGraphic()->Anim_Generate(); // Generate the next two animation control points
+            }
+
+            if (selectedSpace != -1 && // There is a selection
+                !!g_board[selectedSpace] && // It contains a piece
+                g_board[hoveredSpace] != g_board[selectedSpace]) // That piece is not the one that just now had its animation updated
+            {
+                g_board[selectedSpace]->GetGraphic()->Anim_Generate(); // Generate the next two animation control points
+            }
+        }
+
+
+        Sleep(16); // Make time go forward
     }
 
     // Cleanup
@@ -431,6 +508,7 @@ int main()
     DeleteObject(blackBrush);
     DeleteObject(whiteBrush);
     DeleteObject(select);
+    DeleteObject(highlight);
 
     DeleteObject(hPen);
 

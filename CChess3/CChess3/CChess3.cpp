@@ -338,6 +338,7 @@ int main()
     POINT space = cursor; // Most recent space the cursor was hovering
     int selectedSpace = -1; // Index of the space selected
     bool downDirty = true; // A bit of a hack because I can't figure out how to test when the mouse is pressed, only when it's down.
+    int turn = 0;
 
     // Draw board spaces
     for (int i = 0; i < 64; ++i)

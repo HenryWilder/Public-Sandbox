@@ -264,14 +264,16 @@ int main()
 
         }
 
-        for (int i = 0; i < 12; ++i)
+        Animation::Tick();
+        if (Animation::t == 0.0f)
         {
-            Animation::Tick();
-            if (Animation::t == 0.0f)
+            for (int i = 0; i < 12; ++i)
+            {
                 units[i].GetGraphic()->Anim_Generate();
+            }
         }
 
-        Sleep(16);
+        Sleep(32);
     }
 
     DeleteObject(blackBrush);

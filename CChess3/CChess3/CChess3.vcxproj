@@ -142,8 +142,14 @@
     <ClCompile Include="CChess3.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="pawn" />
     <Text Include="pawn.cc3asset" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bishop.cc3asset" />
+    <None Include="king.cc3asset" />
+    <None Include="knight.cc3asset" />
+    <None Include="queen.cc3asset" />
+    <None Include="rook.cc3asset" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

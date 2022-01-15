@@ -20,11 +20,25 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="pawn">
-      <Filter>Resource Files</Filter>
-    </Text>
     <Text Include="pawn.cc3asset">
       <Filter>Resource Files</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bishop.cc3asset">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="king.cc3asset">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="knight.cc3asset">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="queen.cc3asset">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="rook.cc3asset">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

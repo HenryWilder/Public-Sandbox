@@ -58,7 +58,7 @@ struct Animation
     }
     static float Random()
     {
-        return Lerp(4.0f * ((float)named::g_spaceWidth / 100.0f), 20.0f * ((float)named::g_spaceWidth / 100.0f), agitation) * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
+        return Lerp(4.0f * ((float)named::g_spaceWidth / 100.0f), 30.0f * ((float)named::g_spaceWidth / 100.0f), agitation) * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
     }
     void Generate()
     {
@@ -632,7 +632,16 @@ int main()
         }
 
         if (hoveredSpace != -1 && !b_hoverDrawn)
+        {
             DrawBoardSpace(hoveredSpace, (selectedSpace != -1 ? (selectedSpace == hoveredSpace ? select : (hoveredLegality ? highlight : highlight_bad)) : hover), true);
+        }
+
+        if (hoveredSpace != -1 && selectedSpace != -1 && !g_board[hoveredSpace] && !!g_board[selectedSpace])
+        {
+            POINT space = IndexToBoard(hoveredSpace);
+            BoardToScreen(&space);
+            DrawVectorGraphicAnimated(*g_board[selectedSpace]->GetGraphic(), space.x, space.y, g_board[selectedSpace]->team);
+        }
         
         // UPDATE ANIMATION
 

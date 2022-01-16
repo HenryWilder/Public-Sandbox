@@ -598,32 +598,41 @@ int main()
 
                         case UnitType::rook:
                         {
+                            POINT pos = IndexToBoard(selectedSpace);
                             int checkPoint;
 
                             // Up
-                            for (checkPoint = selectedSpace - 8; IndexToBoardY(checkPoint) >= 0 && IndexToBoardX(checkPoint) == IndexToBoardX(selectedSpace); checkPoint -= 8)
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < pos.y; ++i)
                             {
+                                checkPoint -= 8;
                                 if (!IsEmptyOrCapture(checkPoint))
                                     break;
                             }
 
                             // Down
-                            for (checkPoint = selectedSpace + 8; IndexToBoardY(checkPoint) < 8 && IndexToBoardX(checkPoint) == IndexToBoardX(selectedSpace); checkPoint += 8)
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < (7 - pos.y); ++i)
                             {
+                                checkPoint += 8;
                                 if (!IsEmptyOrCapture(checkPoint))
                                     break;
                             }
 
                             // Left
-                            for (checkPoint = selectedSpace - 1; IndexToBoardX(checkPoint) >= 0 && IndexToBoardY(checkPoint) == IndexToBoardY(selectedSpace); --checkPoint)
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < pos.x; ++i)
                             {
+                                --checkPoint;
                                 if (!IsEmptyOrCapture(checkPoint))
                                     break;
                             }
 
                             // Right
-                            for (checkPoint = selectedSpace + 1; IndexToBoardX(checkPoint) < 8 && IndexToBoardY(checkPoint) == IndexToBoardY(selectedSpace); ++checkPoint)
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < (7 - pos.x); ++i)
                             {
+                                ++checkPoint;
                                 if (!IsEmptyOrCapture(checkPoint))
                                     break;
                             }

@@ -8,27 +8,45 @@
 namespace named
 {
     constexpr LONG g_spaceWidth = 50;
+
+    namespace color
+    {
+        constexpr COLORREF g_teamColor[3][6] = {
+            // White
+            {
+                RGB(59, 7, 9),
+                RGB(119, 14, 18),
+                RGB(178, 21, 27),
+                RGB(237, 28, 36),
+                RGB(241, 73, 80),
+                RGB(242, 242, 242)
+            },
+            // Black
+            {
+                RGB(0, 28, 47),
+                RGB(0, 57, 94),
+                RGB(0, 85, 141),
+                RGB(0, 113, 188),
+                RGB(41, 171, 226),
+                RGB(26, 26, 26)
+            },
+            // Ghost
+            {
+                RGB(0, 28, 47),
+                RGB(0, 57, 94),
+                RGB(0, 85, 141),
+                RGB(0, 113, 188),
+                RGB(41, 171, 226),
+                RGB(26, 26, 26)
+            },
+        };
+    }
+
+    namespace brush
+    {
+        HBRUSH g_teamColor[3][6];
+    }
 }
-COLORREF g_palette[2][6] = {
-    // White
-    {
-        RGB(59, 7, 9),
-        RGB(119, 14, 18),
-        RGB(178, 21, 27),
-        RGB(237, 28, 36),
-        RGB(241, 73, 80),
-        RGB(242, 242, 242)
-    },
-    // Black
-    {
-        RGB(0, 28, 47),
-        RGB(0, 57, 94),
-        RGB(0, 85, 141),
-        RGB(0, 113, 188),
-        RGB(41, 171, 226),
-        RGB(26, 26, 26)
-    },
-};
 
 HDC g_hdc;
 
@@ -159,18 +177,12 @@ struct VectorGraphic
 void DrawVectorGraphicAnimated(const VectorGraphic& vg, int x, int y, int team)
 {
     int colorID = -1;
-    HBRUSH hBrush = CreateSolidBrush(g_palette[team & 1][0]);
     for (const Triangle& tri : vg.paths)
     {
         if (colorID != tri.colorID)
         {
             colorID = tri.colorID;
-
-            if (colorID != -1)
-                DeleteObject(hBrush);
-
-            hBrush = CreateSolidBrush(g_palette[team & 1][colorID]);
-            SelectObject(g_hdc, hBrush);
+            SelectObject(g_hdc, named::brush::g_teamColor[team][colorID]);
         }
 
         POINT apt[3];
@@ -181,34 +193,29 @@ void DrawVectorGraphicAnimated(const VectorGraphic& vg, int x, int y, int team)
 
             if (apt[i].x < x)
                 apt[i].x = x;
+
             if (apt[i].x > (x + named::g_spaceWidth))
                 apt[i].x = x + named::g_spaceWidth;
 
             if (apt[i].y < y)
                 apt[i].y = y;
+
             if (apt[i].y > (y + named::g_spaceWidth))
                 apt[i].y = y + named::g_spaceWidth;
         }
 
         Polygon(g_hdc, apt, 3);
     }
-    DeleteObject(hBrush);
 }
 void DrawVectorGraphic(const VectorGraphic& vg, int x, int y, int team)
 {
     int colorID = -1;
-    HBRUSH hBrush = CreateSolidBrush(g_palette[team & 1][0]);
     for (const Triangle& tri : vg.paths)
     {
         if (colorID != tri.colorID)
         {
             colorID = tri.colorID;
-
-            if (colorID != -1)
-                DeleteObject(hBrush);
-
-            hBrush = CreateSolidBrush(g_palette[team & 1][colorID]);
-            SelectObject(g_hdc, hBrush);
+            SelectObject(g_hdc, named::brush::g_teamColor[team][colorID]);
         }
 
         POINT apt[3];
@@ -220,7 +227,6 @@ void DrawVectorGraphic(const VectorGraphic& vg, int x, int y, int team)
 
         Polygon(g_hdc, apt, 3);
     }
-    DeleteObject(hBrush);
 }
 
 VectorGraphic g_graphics[6] = {
@@ -335,14 +341,14 @@ bool IsSpaceOnBoard(POINT space)
         space.y >= 0 && space.y < 8;
 }
 
-HBRUSH CheckerBrush(int i, HBRUSH white, HBRUSH black)
+HBRUSH CheckerBrush(int index)
 {
-    POINT space = IndexToBoard(i);
-    return (space.x + space.y) & 1 ? white : black;
+    POINT space = IndexToBoard(index);
+    return ((space.x + space.y) & 1) ? named::brush::g_teamColor[0][5] : named::brush::g_teamColor[1][5];
 }
-HBRUSH CheckerBrush(int x, int y, HBRUSH white, HBRUSH black)
+HBRUSH CheckerBrush(int x, int y)
 {
-    return (x + y) & 1 ? white : black;
+    return ((x + y) & 1) ? named::brush::g_teamColor[0][5] : named::brush::g_teamColor[1][5];
 }
 
 void DrawBoardSpace(int space_x, int space_y, HBRUSH backgroundColor, bool animate)
@@ -389,8 +395,14 @@ int main()
     HPEN hPen = CreatePen(PS_NULL, 0, RGB(0, 0, 0));
     SelectObject(g_hdc, hPen);
 
-    HBRUSH blackBrush = CreateSolidBrush(g_palette[1][5]);
-    HBRUSH whiteBrush = CreateSolidBrush(g_palette[0][5]);
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 6; ++j)
+        {
+            named::brush::g_teamColor[i][j] = CreateSolidBrush(named::color::g_teamColor[i][j]);
+        }
+    }
+
     HBRUSH hover = CreateSolidBrush(RGB(0, 169, 157));
     HBRUSH select = CreateSolidBrush(RGB(0, 146, 69));
     HBRUSH highlight = CreateSolidBrush(RGB(57, 181, 74));
@@ -412,8 +424,7 @@ int main()
     // Draw board
     for (int i = 0; i < 64; ++i)
     {
-        POINT space = IndexToBoard(i);
-        DrawBoardSpace(space.x, space.y, CheckerBrush(space.x, space.y, whiteBrush, blackBrush), false);
+        DrawBoardSpace(i, CheckerBrush(i), false);
     }
 
     // Game loop
@@ -612,7 +623,7 @@ int main()
 
         for (int clean : spacesToClean)
         {
-            DrawBoardSpace(clean, CheckerBrush(clean, whiteBrush, blackBrush), false);
+            DrawBoardSpace(clean, CheckerBrush(clean), false);
         }
         spacesToClean.clear();
 
@@ -669,8 +680,17 @@ int main()
 
     // Cleanup
 
-    DeleteBrush(blackBrush);
-    DeleteBrush(whiteBrush);
+    GetStockObject(WHITE_BRUSH);
+    GetStockObject(DC_PEN);
+
+    for (int i = 0; i < 2; ++i)
+    {
+        for (int j = 0; j < 6; ++j)
+        {
+            DeleteBrush(named::brush::g_teamColor[i][j]);
+        }
+    }
+
     DeleteBrush(hover);
     DeleteBrush(select);
     DeleteBrush(highlight);
@@ -678,9 +698,6 @@ int main()
     DeleteBrush(highlight_takePiece);
 
     DeletePen(hPen);
-
-    GetStockObject(WHITE_BRUSH);
-    GetStockObject(DC_PEN);
 
     ReleaseDC(hWnd, g_hdc);
 

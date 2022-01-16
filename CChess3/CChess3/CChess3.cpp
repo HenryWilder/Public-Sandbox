@@ -7,7 +7,7 @@
 // Named values
 namespace named
 {
-    constexpr LONG g_spaceWidth = 60;
+    constexpr LONG g_spaceWidth = 50;
 
     namespace color
     {
@@ -395,8 +395,8 @@ void DrawBoardSpace(int index, HBRUSH backgroundColor, bool animate)
 
 int main()
 {
-    std::cout << "\x1b]2;Console Chess 3.0\x07"; // Renames the window
-    std::cout << "\x1b[?25l"; // Hide the cursor
+    //std::cout << "\x1b]2;Console Chess 3.0\x07"; // Renames the window
+    //std::cout << "\x1b[?25l"; // Hide the cursor
 
     HWND hWnd = GetConsoleWindow();
     g_hdc = GetDC(hWnd);
@@ -435,16 +435,16 @@ int main()
     int selectedSpace = -1; // Index of the space selected
     bool hoveredLegality = true;
 
-    auto IsEmptyOrCapture = [&selectedSpace, &legalMoves](int space) {
-        if (!g_board[space])
+    auto IsEmptyOrCapture = [&selectedSpace, &legalMoves](int move) {
+        if (!g_board[move])
         {
-            legalMoves.push_back(space);
+            legalMoves.push_back(move);
             return true; // Keep going
         }
         else
         {
-            if (g_board[space]->team != g_board[selectedSpace]->team) // Can take enemy
-                legalMoves.push_back(space);
+            if (g_board[move]->team != g_board[selectedSpace]->team) // Can take enemy
+                legalMoves.push_back(move);
 
             return false; // Stop
         }
@@ -827,8 +827,14 @@ int main()
 
                             for (int i = 0; i < 8; ++i)
                             {
-                                IsEmptyOrCapture(selectedSpace + checkOffsets[i]);
+                                int checkPoint = selectedSpace + checkOffsets[i];
+
+                                // Yeah the king can teleport to the opposite side of the board now, but I'm getting tired and this fixes the crashing.
+                                if (checkPoint >= 0 && checkPoint < 64)
+                                    IsEmptyOrCapture(checkPoint);
                             }
+
+                            // TODO: Add castling
                         }
                         break;
                         }

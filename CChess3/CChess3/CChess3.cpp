@@ -589,7 +589,63 @@ int main()
                         }
                         break;
 
-                        case UnitType::rook: break;
+                        case UnitType::rook:
+                        {
+                            int checkPoint;
+
+                            // Up
+                            for (checkPoint = selectedSpace - 8; IndexToBoardY(checkPoint) >= 0 && IndexToBoardX(checkPoint) == IndexToBoardX(selectedSpace); checkPoint -= 8)
+                            {
+                                if (!g_board[checkPoint])
+                                    legalMoves.push_back(checkPoint);
+                                else
+                                {
+                                    if (g_board[checkPoint]->team != g_board[selectedSpace]->team) // Can take enemy
+                                        legalMoves.push_back(checkPoint);
+                                    break;
+                                }
+                            }
+
+                            // Down
+                            for (checkPoint = selectedSpace + 8; IndexToBoardY(checkPoint) < 8 && IndexToBoardX(checkPoint) == IndexToBoardX(selectedSpace); checkPoint += 8)
+                            {
+                                if (!g_board[checkPoint])
+                                    legalMoves.push_back(checkPoint);
+                                else
+                                {
+                                    if (g_board[checkPoint]->team != g_board[selectedSpace]->team) // Can take enemy
+                                        legalMoves.push_back(checkPoint);
+                                    break;
+                                }
+                            }
+
+                            // Left
+                            for (checkPoint = selectedSpace - 1; IndexToBoardX(checkPoint) >= 0 && IndexToBoardY(checkPoint) == IndexToBoardY(selectedSpace); --checkPoint)
+                            {
+                                if (!g_board[checkPoint])
+                                    legalMoves.push_back(checkPoint);
+                                else
+                                {
+                                    if (g_board[checkPoint]->team != g_board[selectedSpace]->team) // Can take enemy
+                                        legalMoves.push_back(checkPoint);
+                                    break;
+                                }
+                            }
+
+                            // Right
+                            for (checkPoint = selectedSpace + 1; IndexToBoardX(checkPoint) < 8 && IndexToBoardY(checkPoint) == IndexToBoardY(selectedSpace); ++checkPoint)
+                            {
+                                if (!g_board[checkPoint])
+                                    legalMoves.push_back(checkPoint);
+                                else
+                                {
+                                    if (g_board[checkPoint]->team != g_board[selectedSpace]->team) // Can take enemy
+                                        legalMoves.push_back(checkPoint);
+                                    break;
+                                }
+                            }
+                        }
+                        break;
                         case UnitType::knight: break;
                         case UnitType::bishop: break;
                         case UnitType::queen: break;

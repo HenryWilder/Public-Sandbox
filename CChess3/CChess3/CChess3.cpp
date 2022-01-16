@@ -7,7 +7,7 @@
 // Named values
 namespace named
 {
-    constexpr LONG g_spaceWidth = 50;
+    constexpr LONG g_spaceWidth = 60;
 
     namespace color
     {
@@ -532,6 +532,10 @@ int main()
 
             if (b_legalMove) // User selected a legal move, we can move the piece!!
             {
+                // Game win
+                if (!!g_board[hoveredSpace] && g_board[hoveredSpace]->type == UnitType::king)
+                    return 0;
+
                 // Move the piece
                 g_board[hoveredSpace] = g_board[selectedSpace];
                 g_board[selectedSpace] = nullptr;

@@ -52,13 +52,13 @@ struct Animation
 
     static void Tick()
     {
-        t += (1.0f / Lerp(60.0f, 20.0f, agitation));
+        t += (1.0f / Lerp(60.0f, 40.0f, agitation));
         if (t >= 1.0f)
             t = 0.0f;
     }
     static float Random()
     {
-        return Lerp(5.0f * ((float)named::g_spaceWidth / 100.0f), 15.0f * ((float)named::g_spaceWidth / 100.0f), agitation) * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
+        return Lerp(4.0f * ((float)named::g_spaceWidth / 100.0f), 20.0f * ((float)named::g_spaceWidth / 100.0f), agitation) * ((float)(rand() - (RAND_MAX / 2)) / RAND_MAX);
     }
     void Generate()
     {
@@ -178,6 +178,16 @@ void DrawVectorGraphicAnimated(const VectorGraphic& vg, int x, int y, int team)
         {
             apt[i].x = (tri.apt[i].x + (LONG)x + (LONG)(tri.ptAnim[i][0].Sample() + 0.5f));
             apt[i].y = (tri.apt[i].y + (LONG)y + (LONG)(tri.ptAnim[i][1].Sample() + 0.5f));
+
+            if (apt[i].x < x)
+                apt[i].x = x;
+            if (apt[i].x > (x + named::g_spaceWidth))
+                apt[i].x = x + named::g_spaceWidth;
+
+            if (apt[i].y < y)
+                apt[i].y = y;
+            if (apt[i].y > (y + named::g_spaceWidth))
+                apt[i].y = y + named::g_spaceWidth;
         }
 
         Polygon(g_hdc, apt, 3);
@@ -650,12 +660,15 @@ int main()
 
     // Cleanup
 
-    DeleteObject(blackBrush);
-    DeleteObject(whiteBrush);
-    DeleteObject(select);
-    DeleteObject(highlight);
+    DeleteBrush(blackBrush);
+    DeleteBrush(whiteBrush);
+    DeleteBrush(hover);
+    DeleteBrush(select);
+    DeleteBrush(highlight);
+    DeleteBrush(highlight_bad);
+    DeleteBrush(highlight_takePiece);
 
-    DeleteObject(hPen);
+    DeletePen(hPen);
 
     GetStockObject(WHITE_BRUSH);
     GetStockObject(DC_PEN);

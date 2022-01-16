@@ -437,12 +437,59 @@ int main()
             // Reset the animation for the new space
             if (hoveredSpace != -1 && b_onBoard && !!g_board[hoveredSpace])
                 g_board[hoveredSpace]->GetGraphic()->Anim_Zero();
+
+            if (!b_mousePressed)
+            {
+                if (!legalMoves.empty())
+                {
+                    hoveredLegality = false;
+                    for (int move : legalMoves)
+                    {
+                        if (move == hoveredSpace)
+                        {
+                            hoveredLegality = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    hoveredLegality = (hoveredSpace != -1 && !!g_board[hoveredSpace] && (g_board[hoveredSpace]->team & 1) == (turn & 1));
+                }
+            }
         }
 
         // Selection
         if (b_mousePressed && b_onBoard) // On mouse press
         {
-            if (!!g_board[hoveredSpace] && (g_board[hoveredSpace]->team & 1) == (turn & 1)) // Check if selection is allowed
+            // Check if the selection is a legal move (implies there is a selected piece, as this very statement clears the vector otherwise)
+            bool b_legalMove = false;
+            for (int move : legalMoves)
+            {
+                if (move == hoveredSpace)
+                {
+                    b_legalMove = true;
+                    break;
+                }
+            }
+
+            if (b_legalMove) // User selected a legal move, we can move the piece!!
+            {
+                // Move the piece
+                g_board[hoveredSpace] = g_board[selectedSpace];
+                g_board[selectedSpace] = nullptr;
+                ++turn;
+
+                // Clean the selection
+                spacesToClean.push_back(selectedSpace);
+                selectedSpace = -1;
+                for (int move : legalMoves)
+                {
+                    spacesToClean.push_back(move);
+                }
+                legalMoves.clear();
+            }
+            else if (!!g_board[hoveredSpace] && (g_board[hoveredSpace]->team & 1) == (turn & 1)) // Check if selection is allowed
             {
                 if (selectedSpace != -1) // There is already a selection
                 {
@@ -464,6 +511,12 @@ int main()
                 // If there is a selection
                 if (selectedSpace != -1)
                 {
+                    for (int move : legalMoves)
+                    {
+                        spacesToClean.push_back(move);
+                    }
+                    legalMoves.clear();
+
                     if (!!g_board[selectedSpace])
                     {
                         hoveredLegality = true;
@@ -483,7 +536,7 @@ int main()
                             // If the pawn is unmoved
                             if (pos.y == (team ? 6 : 1)) // We can assume, because a pawn can never move backwards, that any pawn in its starting space hasn't moved.
                             {
-                                LONG firstMoveForward = forwardIndex + 8; // Next row
+                                LONG firstMoveForward = forwardIndex + 8 * pawnMoveDirection; // Next row
                                 if (!g_board[firstMoveForward])
                                     legalMoves.push_back(firstMoveForward);
                             }
@@ -494,7 +547,7 @@ int main()
                             };
                             for (int i = 0; i < 2; ++i)
                             {
-                                if (IndexToBoardY(diagonal[i]) == (team ? 5 : 2) && // Valid space
+                                if (IndexToBoardY(diagonal[i]) == IndexToBoardY(forwardIndex) && // Valid space
                                     !!g_board[diagonal[i]] && // There must be a piece at the space
                                     (g_board[diagonal[i]]->team & 1) != team) // That piece must be on the opposite team
                                 {
@@ -540,7 +593,7 @@ int main()
             DrawBoardSpace(selectedSpace, select, true);
 
         if (hoveredSpace != -1)
-            DrawBoardSpace(hoveredSpace, (selectedSpace != -1 ? (selectedSpace == hoveredSpace ? select : highlight) : CheckerBrush(hoveredSpace, whiteBrush, blackBrush)), true);
+            DrawBoardSpace(hoveredSpace, (selectedSpace != -1 ? (selectedSpace == hoveredSpace ? select : (hoveredLegality ? highlight : highlight_bad)) : CheckerBrush(hoveredSpace, whiteBrush, blackBrush)), true);
 
         // UPDATE ANIMATION
 

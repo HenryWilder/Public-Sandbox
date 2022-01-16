@@ -658,7 +658,55 @@ int main()
                         }
                         break;
 
-                        case UnitType::bishop: break;
+                        case UnitType::bishop:
+                        {
+                            POINT pos = IndexToBoard(selectedSpace);
+                            int checkPoint;
+
+                            /*
+                            * -9  -7
+                            *   +0
+                            * +7  +9
+                            */
+
+                            // NE
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < min(7 - pos.x, pos.y); ++i)
+                            {
+                                checkPoint -= 7;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+
+                            // SE
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < min(7 - pos.x, 7 - pos.y); ++i)
+                            {
+                                checkPoint += 9;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+
+                            // SW
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < min(pos.x, 7 - pos.y); ++i)
+                            {
+                                checkPoint += 7;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+
+                            // NW
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < min(pos.x, pos.y); ++i)
+                            {
+                                checkPoint -= 9;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+                        }
+                        break;
+
                         case UnitType::queen: break;
                         case UnitType::king: break;
                         }

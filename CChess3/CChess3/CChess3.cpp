@@ -794,7 +794,21 @@ int main()
                             }
                         }
                         break;
-                        case UnitType::king: break;
+
+                        case UnitType::king:
+                        {
+                            constexpr int checkOffsets[8] = {
+                                -9, -8, -7,
+                                -1,     +1,
+                                +7, +8, +9,
+                            };
+
+                            for (int i = 0; i < 8; ++i)
+                            {
+                                IsEmptyOrCapture(selectedSpace + checkOffsets[i]);
+                            }
+                        }
+                        break;
                         }
                     }
                 }

@@ -2,6 +2,7 @@
 #include <windowsx.h>
 #include <vector>
 #include <fstream>
+#include <iostream>
 
 // Named values
 namespace named
@@ -364,8 +365,16 @@ struct SpaceDrawingData
 
 int main()
 {
+    std::cout << "\x1b]2;Console Chess 3.0\x07"; // Renames the window
+    std::cout << "\x1b[?25l"; // Hide the cursor
+
     HWND hWnd = GetConsoleWindow();
     g_hdc = GetDC(hWnd);
+
+    // Dunno how this works but it was in CChess2 and when I added it, the cursor selection issue (highlighting text) that was bugging me so much went away.
+    HANDLE console = GetStdHandle(STD_INPUT_HANDLE);
+    SetConsoleMode(console, ENABLE_EXTENDED_FLAGS | ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT);
+
 
     HPEN hPen = CreatePen(PS_NULL, 0, RGB(0, 0, 0));
     SelectObject(g_hdc, hPen);
@@ -572,6 +581,15 @@ int main()
                     spacesToClean.push_back(selectedSpace); // Clean previously selected space
 
                 selectedSpace = -1;
+            }
+
+            if (selectedSpace == -1)
+            {
+                for (int move : legalMoves)
+                {
+                    spacesToClean.push_back(move);
+                }
+                legalMoves.clear();
             }
         }
 

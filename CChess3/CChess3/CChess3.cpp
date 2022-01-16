@@ -17,16 +17,16 @@ COLORREF g_palette[2][6] = {
         RGB(178, 21, 27),
         RGB(237, 28, 36),
         RGB(241, 73, 80),
-        RGB(245, 245, 245)
+        RGB(242, 242, 242)
     },
     // Black
     {
-        RGB(9, 7, 59),
-        RGB(18, 14, 119),
-        RGB(27, 21, 178),
-        RGB(36, 28, 237),
-        RGB(80, 73, 241),
-        RGB(30, 30, 30)
+        RGB(0, 28, 47),
+        RGB(0, 57, 94),
+        RGB(0, 85, 141),
+        RGB(0, 113, 188),
+        RGB(41, 171, 226),
+        RGB(26, 26, 26)
     },
 };
 
@@ -381,9 +381,11 @@ int main()
 
     HBRUSH blackBrush = CreateSolidBrush(g_palette[1][5]);
     HBRUSH whiteBrush = CreateSolidBrush(g_palette[0][5]);
-    HBRUSH select = CreateSolidBrush(RGB(0, 50, 200));
-    HBRUSH highlight = CreateSolidBrush(RGB(200, 200, 0));
-    HBRUSH highlight_bad = CreateSolidBrush(RGB(200, 000, 0));
+    HBRUSH hover = CreateSolidBrush(RGB(0, 169, 157));
+    HBRUSH select = CreateSolidBrush(RGB(0, 146, 69));
+    HBRUSH highlight = CreateSolidBrush(RGB(57, 181, 74));
+    HBRUSH highlight_bad = CreateSolidBrush(RGB(193, 39, 45));
+    HBRUSH highlight_takePiece = CreateSolidBrush(RGB(251, 176, 59));
 
     POINT cursor = { 0,0 }; // Location of the mouse (space changes as needed)
     POINT space = cursor; // Most recent space the cursor was hovering
@@ -596,6 +598,8 @@ int main()
 
         // DRAW THE FRAME
 
+        bool b_hoverDrawn = false;
+
         for (int clean : spacesToClean)
         {
             DrawBoardSpace(clean, CheckerBrush(clean, whiteBrush, blackBrush), false);
@@ -604,15 +608,22 @@ int main()
 
         for (int move : legalMoves)
         {
-            DrawBoardSpace(move, highlight, false);
+            DrawBoardSpace(move, (!!g_board[move] ? highlight_takePiece : highlight), false);
+            if (move == hoveredSpace)
+                b_hoverDrawn = true;
         }
 
         if (selectedSpace != -1 && selectedSpace != hoveredSpace)
+        {
             DrawBoardSpace(selectedSpace, select, true);
 
-        if (hoveredSpace != -1)
-            DrawBoardSpace(hoveredSpace, (selectedSpace != -1 ? (selectedSpace == hoveredSpace ? select : (hoveredLegality ? highlight : highlight_bad)) : CheckerBrush(hoveredSpace, whiteBrush, blackBrush)), true);
+            if (selectedSpace == hoveredSpace)
+                b_hoverDrawn = true;
+        }
 
+        if (hoveredSpace != -1 && !b_hoverDrawn)
+            DrawBoardSpace(hoveredSpace, (selectedSpace != -1 ? (selectedSpace == hoveredSpace ? select : (hoveredLegality ? highlight : highlight_bad)) : hover), true);
+        
         // UPDATE ANIMATION
 
         Animation::agitation = (float)(!hoveredLegality);

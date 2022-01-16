@@ -716,7 +716,84 @@ int main()
                         }
                         break;
 
-                        case UnitType::queen: break;
+                        case UnitType::queen:
+                        {
+                            POINT pos = IndexToBoard(selectedSpace);
+                            int checkPoint;
+
+                            // North
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < pos.y; ++i)
+                            {
+                                checkPoint -= 8;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+
+                            // NE
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < min(7 - pos.x, pos.y); ++i)
+                            {
+                                checkPoint -= 7;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+
+                            // East
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < (7 - pos.x); ++i)
+                            {
+                                ++checkPoint;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+                            
+                            // SE
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < min(7 - pos.x, 7 - pos.y); ++i)
+                            {
+                                checkPoint += 9;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+
+                            // South
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < (7 - pos.y); ++i)
+                            {
+                                checkPoint += 8;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+
+                            // SW
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < min(pos.x, 7 - pos.y); ++i)
+                            {
+                                checkPoint += 7;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+
+                            // West
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < pos.x; ++i)
+                            {
+                                --checkPoint;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+
+                            // NW
+                            checkPoint = selectedSpace;
+                            for (int i = 0; i < min(pos.x, pos.y); ++i)
+                            {
+                                checkPoint -= 9;
+                                if (!IsEmptyOrCapture(checkPoint))
+                                    break;
+                            }
+                        }
+                        break;
                         case UnitType::king: break;
                         }
                     }

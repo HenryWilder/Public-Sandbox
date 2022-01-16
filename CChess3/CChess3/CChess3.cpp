@@ -282,6 +282,14 @@ POINT IndexToBoard(LONG index)
 {
     return POINT{ index % (LONG)8, index / (LONG)8 };
 }
+LONG IndexToBoardX(LONG index)
+{
+    return index % (LONG)8;
+}
+LONG IndexToBoardY(LONG index)
+{
+    return index / (LONG)8;
+}
 void BoardToScreen(POINT* space)
 {
     space->x *= named::g_spaceWidth;
@@ -366,6 +374,7 @@ int main()
     HBRUSH whiteBrush = CreateSolidBrush(g_palette[0][5]);
     HBRUSH select = CreateSolidBrush(RGB(0, 50, 200));
     HBRUSH highlight = CreateSolidBrush(RGB(200, 200, 0));
+    HBRUSH highlight_bad = CreateSolidBrush(RGB(200, 000, 0));
 
     POINT cursor = { 0,0 }; // Location of the mouse (space changes as needed)
     POINT space = cursor; // Most recent space the cursor was hovering
@@ -374,8 +383,10 @@ int main()
     int turn = 0;
 
     std::vector<int> spacesToClean;
+    std::vector<int> legalMoves; // Spaces the selected piece can move to
     int hoveredSpace = -1; // Index of the space hovered
     int selectedSpace = -1; // Index of the space selected
+    bool hoveredLegality = true;
 
     // Draw board
     for (int i = 0; i < 64; ++i)
@@ -440,7 +451,7 @@ int main()
                     {
                         selectedSpace = -1; // Clear the selection
                     }
-                    else // The selection is at a different space - piece can move!
+                    else // The selection is at a different space
                     {
                         selectedSpace = hoveredSpace; // Select current space
                     }
@@ -448,6 +459,58 @@ int main()
                 else // There is no selection
                 {
                     selectedSpace = hoveredSpace; // Select current space
+                }
+
+                // If there is a selection
+                if (selectedSpace != -1)
+                {
+                    if (!!g_board[selectedSpace])
+                    {
+                        hoveredLegality = true;
+
+                        switch (g_board[selectedSpace]->type)
+                        {
+                        case UnitType::pawn:
+                        {
+                            POINT pos = IndexToBoard(selectedSpace);
+                            bool team = g_board[selectedSpace]->team & 1;
+                            int pawnMoveDirection = (team ? -1 : 1);
+
+                            LONG forwardIndex = BoardToIndex({ pos.x, pos.y + pawnMoveDirection });
+                            if (!g_board[forwardIndex])
+                                legalMoves.push_back(forwardIndex);
+
+                            // If the pawn is unmoved
+                            if (pos.y == (team ? 6 : 1)) // We can assume, because a pawn can never move backwards, that any pawn in its starting space hasn't moved.
+                            {
+                                LONG firstMoveForward = forwardIndex + 8; // Next row
+                                if (!g_board[firstMoveForward])
+                                    legalMoves.push_back(firstMoveForward);
+                            }
+
+                            LONG diagonal[2] = {
+                                forwardIndex - 1,
+                                forwardIndex + 1
+                            };
+                            for (int i = 0; i < 2; ++i)
+                            {
+                                if (IndexToBoardY(diagonal[i]) == (team ? 5 : 2) && // Valid space
+                                    !!g_board[diagonal[i]] && // There must be a piece at the space
+                                    (g_board[diagonal[i]]->team & 1) != team) // That piece must be on the opposite team
+                                {
+                                    legalMoves.push_back(diagonal[i]);
+                                }
+                            }
+                        }
+                        break;
+
+                        case UnitType::rook: break;
+                        case UnitType::knight: break;
+                        case UnitType::bishop: break;
+                        case UnitType::queen: break;
+                        case UnitType::king: break;
+                        }
+                    }
                 }
             }
             else
@@ -468,6 +531,11 @@ int main()
         }
         spacesToClean.clear();
 
+        for (int move : legalMoves)
+        {
+            DrawBoardSpace(move, highlight, false);
+        }
+
         if (selectedSpace != -1 && selectedSpace != hoveredSpace)
             DrawBoardSpace(selectedSpace, select, true);
 
@@ -476,12 +544,7 @@ int main()
 
         // UPDATE ANIMATION
 
-        // TODO: Make agitation based on whether a piece can move to a space or not
-        //if (selectedSpace != -1)
-        //    Animation::agitation = 1.0f;
-        //else
-        //    Animation::agitation = 0.0f;
-
+        Animation::agitation = (float)(!hoveredLegality);
 
         Animation::Tick(); // Mark that the frame has passed
         if (Animation::t == 0.0f) // The animation time has been reset

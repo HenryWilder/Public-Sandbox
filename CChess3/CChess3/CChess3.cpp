@@ -873,6 +873,7 @@ int main()
         for (int move : legalMoves)
         {
             DrawBoardSpace(move, (!!g_board[move] ? highlight_takePiece : highlight), false);
+
             if (move == hoveredSpace)
                 b_hoverDrawn = true;
         }

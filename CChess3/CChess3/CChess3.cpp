@@ -371,14 +371,6 @@ void DrawBoardSpace(int index, HBRUSH backgroundColor, bool animate)
     DrawBoardSpace(space.x, space.y, backgroundColor, animate);
 }
 
-struct SpaceDrawingData
-{
-    POINT space;
-    HBRUSH background;
-    Unit* unitAtSpace;
-    bool animated;
-};
-
 int main()
 {
     std::cout << "\x1b]2;Console Chess 3.0\x07"; // Renames the window
@@ -420,6 +412,21 @@ int main()
     int hoveredSpace = -1; // Index of the space hovered
     int selectedSpace = -1; // Index of the space selected
     bool hoveredLegality = true;
+
+    auto IsEmptyOrCapture = [&selectedSpace, &legalMoves](int space) {
+        if (!g_board[space])
+        {
+            legalMoves.push_back(space);
+            return true; // Keep going
+        }
+        else
+        {
+            if (g_board[space]->team != g_board[selectedSpace]->team) // Can take enemy
+                legalMoves.push_back(space);
+
+            return false; // Stop
+        }
+    };
 
     // Draw board
     for (int i = 0; i < 64; ++i)
@@ -596,57 +603,61 @@ int main()
                             // Up
                             for (checkPoint = selectedSpace - 8; IndexToBoardY(checkPoint) >= 0 && IndexToBoardX(checkPoint) == IndexToBoardX(selectedSpace); checkPoint -= 8)
                             {
-                                if (!g_board[checkPoint])
-                                    legalMoves.push_back(checkPoint);
-                                else
-                                {
-                                    if (g_board[checkPoint]->team != g_board[selectedSpace]->team) // Can take enemy
-                                        legalMoves.push_back(checkPoint);
+                                if (!IsEmptyOrCapture(checkPoint))
                                     break;
-                                }
                             }
 
                             // Down
                             for (checkPoint = selectedSpace + 8; IndexToBoardY(checkPoint) < 8 && IndexToBoardX(checkPoint) == IndexToBoardX(selectedSpace); checkPoint += 8)
                             {
-                                if (!g_board[checkPoint])
-                                    legalMoves.push_back(checkPoint);
-                                else
-                                {
-                                    if (g_board[checkPoint]->team != g_board[selectedSpace]->team) // Can take enemy
-                                        legalMoves.push_back(checkPoint);
+                                if (!IsEmptyOrCapture(checkPoint))
                                     break;
-                                }
                             }
 
                             // Left
                             for (checkPoint = selectedSpace - 1; IndexToBoardX(checkPoint) >= 0 && IndexToBoardY(checkPoint) == IndexToBoardY(selectedSpace); --checkPoint)
                             {
-                                if (!g_board[checkPoint])
-                                    legalMoves.push_back(checkPoint);
-                                else
-                                {
-                                    if (g_board[checkPoint]->team != g_board[selectedSpace]->team) // Can take enemy
-                                        legalMoves.push_back(checkPoint);
+                                if (!IsEmptyOrCapture(checkPoint))
                                     break;
-                                }
                             }
 
                             // Right
                             for (checkPoint = selectedSpace + 1; IndexToBoardX(checkPoint) < 8 && IndexToBoardY(checkPoint) == IndexToBoardY(selectedSpace); ++checkPoint)
                             {
-                                if (!g_board[checkPoint])
-                                    legalMoves.push_back(checkPoint);
-                                else
-                                {
-                                    if (g_board[checkPoint]->team != g_board[selectedSpace]->team) // Can take enemy
-                                        legalMoves.push_back(checkPoint);
+                                if (!IsEmptyOrCapture(checkPoint))
                                     break;
-                                }
                             }
                         }
                         break;
-                        case UnitType::knight: break;
+
+                        case UnitType::knight:
+                        {
+                            constexpr POINT checkOffsets[8] = {
+                                { +1, -2 },
+                                { +2, -1 },
+
+                                { +2, +1 },
+                                { +1, +2 },
+
+                                { -2, +1 },
+                                { -1, +2 },
+
+                                { -1, -2 },
+                                { -2, -1 },
+                            };
+
+                            for (int i = 0; i < 8; ++i)
+                            {
+                                POINT checkPoint;
+                                checkPoint.x = IndexToBoardX(selectedSpace) + checkOffsets[i].x;
+                                checkPoint.y = IndexToBoardY(selectedSpace) + checkOffsets[i].y;
+
+                                if (IsSpaceOnBoard(checkPoint))
+                                    IsEmptyOrCapture(BoardToIndex(checkPoint));
+                            }
+                        }
+                        break;
+
                         case UnitType::bishop: break;
                         case UnitType::queen: break;
                         case UnitType::king: break;

@@ -32,12 +32,12 @@ namespace named
             },
             // Ghost
             {
-                RGB(0, 28, 47),
-                RGB(0, 57, 94),
-                RGB(0, 85, 141),
-                RGB(0, 113, 188),
-                RGB(41, 171, 226),
-                RGB(26, 26, 26)
+                RGB(153, 153, 153),
+                RGB(179, 179, 179),
+                RGB(204, 204, 204),
+                RGB(230, 230, 230),
+                RGB(255, 255, 255),
+                RGB(255, 0, 255)
             },
         };
     }
@@ -173,6 +173,28 @@ struct VectorGraphic
         }
     }
 };
+
+void DrawVectorGraphicFlight(const VectorGraphic& vg, int x0, int y0, int x1, int y1, int team)
+{
+    int colorID = -1;
+    for (const Triangle& tri : vg.paths)
+    {
+        if (colorID != tri.colorID)
+        {
+            colorID = tri.colorID;
+            SelectObject(g_hdc, named::brush::g_teamColor[team][colorID]);
+        }
+
+        POINT apt[3];
+        for (int i = 0; i < 3; ++i)
+        {
+            apt[i].x = (tri.apt[i].x + (LONG)Lerp(x0, x1, Animation::t) + (LONG)(tri.ptAnim[i][0].Sample() + 0.5f));
+            apt[i].y = (tri.apt[i].y + (LONG)Lerp(y0, y1, Animation::t) + (LONG)(tri.ptAnim[i][1].Sample() + 0.5f));
+        }
+
+        Polygon(g_hdc, apt, 3);
+    }
+}
 
 void DrawVectorGraphicAnimated(const VectorGraphic& vg, int x, int y, int team)
 {
@@ -387,7 +409,7 @@ int main()
     HPEN hPen = CreatePen(PS_NULL, 0, RGB(0, 0, 0));
     SelectObject(g_hdc, hPen);
 
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < 3; ++i)
     {
         for (int j = 0; j < 6; ++j)
         {
@@ -472,10 +494,6 @@ int main()
             // Clean up the previous space
             spacesToClean.push_back(BoardToIndex(space));
             space = cursor;
-
-            // Reset the animation for the new space
-            if (hoveredSpace != -1 && b_onBoard && !!g_board[hoveredSpace])
-                g_board[hoveredSpace]->GetGraphic()->Anim_Zero();
 
             if (!b_mousePressed)
             {
@@ -866,7 +884,7 @@ int main()
         {
             POINT space = IndexToBoard(hoveredSpace);
             BoardToScreen(&space);
-            DrawVectorGraphicAnimated(*g_board[selectedSpace]->GetGraphic(), space.x, space.y, g_board[selectedSpace]->team);
+            DrawVectorGraphicAnimated(*g_board[selectedSpace]->GetGraphic(), space.x, space.y, 2);
         }
         
         // UPDATE ANIMATION
@@ -878,6 +896,9 @@ int main()
         {
             if (hoveredSpace != -1 && !!g_board[hoveredSpace]) // If there is a piece at the space being hovered
             {
+                if (b_moved)
+                    g_board[hoveredSpace]->GetGraphic()->Anim_Zero();
+
                 g_board[hoveredSpace]->GetGraphic()->Anim_Generate(); // Generate the next two animation control points
             }
 

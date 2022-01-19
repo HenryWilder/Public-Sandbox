@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <algorithm>
 
 float Lerp(float a, float b, float t)
 {
@@ -11,21 +12,22 @@ struct Vector2
 };
 struct AnimatedPoint
 {
-    AnimatedPoint() : pt{ 0,0 }, cp{ { 0,0 }, { 0,0 }, { RandomFlt(5.0f), RandomFlt(5.0f) } } {}
+    AnimatedPoint() : pt{ 0,0 }, cp{ { 0,0 }, { 0,0 }, { RandomFlt(), RandomFlt() } }, agitation(0.0f) {}
 
     static float t;
     POINT pt;
     Vector2 cp[3];
+    float agitation;
 
-    float RandomFlt(float radius)
+    float RandomFlt()
     {
-        return ((((float)rand() / (float)RAND_MAX) - 0.5f) * 2.0f) * radius;
+        return (((float)rand() / (float)RAND_MAX) - 0.5f) * 2.0f;
     }
     void Generate()
     {
         cp[0] = cp[2];
-        cp[1] = { RandomFlt(5.0f), RandomFlt(5.0f) };
-        cp[2] = { RandomFlt(5.0f), RandomFlt(5.0f) };
+        cp[1] = { RandomFlt(), RandomFlt() };
+        cp[2] = { RandomFlt(), RandomFlt() };
     }
     // True if need to generate
     static bool Tick()
@@ -43,8 +45,8 @@ struct AnimatedPoint
     POINT GetPos()
     {
         return {
-            pt.x + (LONG)(0.5f + Lerp(Lerp(cp[0].x, cp[1].x, t), Lerp(cp[1].x, cp[2].x, t), t)),
-            pt.y + (LONG)(0.5f + Lerp(Lerp(cp[0].y, cp[1].y, t), Lerp(cp[1].y, cp[2].y, t), t))
+            pt.x + (LONG)(0.5f + Lerp(5.0f, 20.0f, agitation) * Lerp(Lerp(cp[0].x, cp[1].x, t), Lerp(cp[1].x, cp[2].x, t), t)),
+            pt.y + (LONG)(0.5f + Lerp(5.0f, 20.0f, agitation) * Lerp(Lerp(cp[0].y, cp[1].y, t), Lerp(cp[1].y, cp[2].y, t), t))
         };
     }
 };
@@ -87,6 +89,17 @@ int main()
         POINT cursor;
         GetCursorPos(&cursor);
         ScreenToClient(hWnd, &cursor);
+
+        for (int y = 0; y < 30; ++y)
+        {
+            for (int x = 0; x < 30; ++x)
+            {
+                float a = cursor.x - pt[y][x].pt.x;
+                float b = cursor.y - pt[y][x].pt.y;
+                float dist = sqrt(a * a + b * b);
+                pt[y][x].agitation = (dist > 1.0f ? 0.0f : 1.0f - dist);
+            }
+        }
 
         for (int y = 1; y < 29; ++y)
         {

@@ -1,5 +1,4 @@
 #include <windows.h>
-#include <array>
 
 float Lerp(float a, float b, float t)
 {
@@ -20,7 +19,7 @@ struct AnimatedPoint
 
     float RandomFlt(float radius)
     {
-        return (((float)rand() / (float)RAND_MAX) - 0.5f) * (2.0f * radius);
+        return ((((float)rand() / (float)RAND_MAX) - 0.5f) * 2.0f) * radius;
     }
     void Generate()
     {
@@ -49,7 +48,7 @@ struct AnimatedPoint
         };
     }
 };
-float AnimatedPoint::t;
+float AnimatedPoint::t = 0.0f;
 
 int main()
 {
@@ -69,7 +68,6 @@ int main()
             pt[y][x].pt.x = (int)((float)x * 20.0f + (y & 1 ? 10.0f : 0.0f));
             pt[y][x].pt.y = (int)((float)y * 15.0f);
             pt[y][x].Generate();
-            pt[y][x].Generate();
         }
     }
 
@@ -81,7 +79,6 @@ int main()
             {
                 for (int x = 0; x < 30; ++x)
                 {
-                    pt[y][x].Generate();
                     pt[y][x].Generate();
                 }
             }

@@ -67,8 +67,8 @@ int main()
     {
         for (int x = 0; x < 30; ++x)
         {
-            pt[y][x].pt.x = (int)((float)x * 20.0f + (y & 1 ? 10.0f : 0.0f));
-            pt[y][x].pt.y = (int)((float)y * 15.0f);
+            pt[y][x].pt.x = (int)((float)x * 20.0f + (y & 1 ? 10.0f : 0.0f)) - 30;
+            pt[y][x].pt.y = (int)((float)y * 15.0f) - 30;
             pt[y][x].Generate();
         }
     }
@@ -94,10 +94,10 @@ int main()
         {
             for (int x = 0; x < 30; ++x)
             {
-                float a = cursor.x - pt[y][x].pt.x;
-                float b = cursor.y - pt[y][x].pt.y;
-                float dist = sqrt(a * a + b * b);
-                pt[y][x].agitation = (dist > 1.0f ? 0.0f : 1.0f - dist);
+                float a = cursor.x - pt[y][x].GetPos().x;
+                float b = cursor.y - pt[y][x].GetPos().y;
+                float dist = sqrtf(a * a + b * b);
+                pt[y][x].agitation = (dist > 200.0f ? 0.0f : (200.0f - dist) / 200.0f);
             }
         }
 

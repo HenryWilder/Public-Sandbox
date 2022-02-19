@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <stack>
 #include <unordered_map>
 #include <unordered_set>
 #include <fstream>
@@ -63,7 +64,7 @@ enum class Class
     Gloo,
 };
 
-std::unordered_map<Class, std::unordered_set<Class>> g_inheritance;
+std::unordered_map<Class, std::unordered_set<Class> /* ancestors, not children */> g_hierarchy;
 
 enum class MemberType
 {
@@ -84,6 +85,56 @@ enum class ContainerType
 };
 struct Container
 {
+    Container()
+    {
+        m_containerType = (ContainerType)0;
+        m_map.keyType = (MemberType)0;
+        m_map.valueType = (MemberType)0;
+        m_map.elements = {};
+    }
+    // Copies the template, not the stored elements
+    Container(const Container& containerTemplate)
+    {
+        m_containerType = containerTemplate.m_containerType;
+        switch (m_containerType)
+        {
+        case ContainerType::Array:
+            m_array.type = containerTemplate.m_array.type;
+            m_array.elements = {};
+            break;
+        case ContainerType::Set:
+            m_set.type = containerTemplate.m_set.type;
+            m_set.elements = {};
+            break;
+        case ContainerType::Map:
+            m_map.keyType = containerTemplate.m_map.keyType;
+            m_map.valueType = containerTemplate.m_map.valueType;
+            m_map.elements = {};
+            break;
+        }
+    }
+    Container(ContainerType container, MemberType typeK, MemberType typeV = (MemberType)0)
+    {
+        m_containerType = container;
+        switch (m_containerType)
+        {
+        case ContainerType::Array:
+            m_array.type = typeK;
+            m_array.elements = {};
+            break;
+        case ContainerType::Set:
+            m_set.type = typeK;
+            m_set.elements = {};
+            break;
+        case ContainerType::Map:
+            m_map.keyType = typeK;
+            m_map.valueType = typeV;
+            m_map.elements = {};
+            break;
+        }
+    }
+    ~Container() = default;
+
     ContainerType m_containerType;
     union
     {
@@ -104,6 +155,28 @@ struct Container
         } m_map;
     };
 };
+
+void CopyContainer(Container& dest, const Container& src)
+{
+    dest.m_containerType = src.m_containerType;
+    switch (dest.m_containerType)
+    {
+    case ContainerType::Array:
+        dest.m_array.type = src.m_array.type;
+        dest.m_array.elements = src.m_array.elements;
+        break;
+    case ContainerType::Set:
+        dest.m_set.type = src.m_set.type;
+        dest.m_set.elements = src.m_set.elements;
+        break;
+    case ContainerType::Map:
+        dest.m_map.keyType = src.m_map.keyType;
+        dest.m_map.valueType = src.m_map.valueType;
+        dest.m_map.elements = src.m_map.elements;
+        break;
+    }
+}
+
 struct RawMember
 {
     union
@@ -119,6 +192,29 @@ struct RawMember
 };
 struct Member
 {
+    Member(MemberType type)
+    {
+        m_type = type;
+        switch (type)
+        {
+        case MemberType::Boolean:
+            break;
+        case MemberType::Integer:
+            break;
+        case MemberType::Float:
+            break;
+        case MemberType::String:
+            break;
+        case MemberType::Class:
+            break;
+        case MemberType::Container:
+            break;
+        case MemberType::Object:
+            break;
+        default:
+            break;
+        }
+    }
     MemberType m_type;
     RawMember m_value;
 };
@@ -134,7 +230,16 @@ struct PureMember
     MemberType m_containerType_key; // Use as "type" in non-map containers
     MemberType m_containerType_value;
 };
-std::unordered_map<Class, std::vector<PureMember>> g_hierarchy;
+std::unordered_map<Class, std::vector<PureMember>> g_classTemplate;
+
+bool DoesInheritFromClass(Class check, Class ancestor)
+{
+    auto it = g_hierarchy.find(check);
+    return it->second.find(ancestor) != it->second.end();
+}
+
+class Object;
+std::vector<Object*> g_world;
 
 class Object
 {
@@ -143,23 +248,32 @@ private:
     std::unordered_map<MemberToken_t, Member> m_members;
 
 public:
-    bool HasClassInheritance(Class with) const
+    Object(Class what)
     {
-
+        m_class = what;
+        auto it = g_hierarchy.find(what);
+        std::vector<Class> lineage(it->second.begin(), it->second.end());
+        size_t spaceNeeded = 0;
+        for (Class ancestor : lineage)
+        {
+            spaceNeeded += g_classTemplate.find(ancestor)->second.size();
+        }
+        m_members.reserve(spaceNeeded);
+        for (Class ancestor : lineage)
+        {
+            for (PureMember member : g_classTemplate.find(ancestor)->second)
+            {
+                RawMember value;
+                m_members.insert(member.m_token, Member{ member.m_type, value });
+            }
+        }
     }
+
     Class GetClass() const
     {
         return m_class;
     }
-
-    friend Object* Spawn(Class what, Transform where);
 };
-std::vector<Object*> g_world;
-Object* Spawn(Class what, Transform where)
-{
-    Object* object = new Object;
-    g_world.push_back();
-}
 
 int main()
 {

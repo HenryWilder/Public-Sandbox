@@ -85,7 +85,10 @@ struct RawMember
 {
     RawMember() { m_string = ""; }
     RawMember(const RawMember& other) { this->m_string = other.m_string; }
+    ~RawMember() {}
+
     RawMember& operator=(const RawMember& other) { this->m_string = other.m_string; }
+
     union
     {
         bool m_boolean;
@@ -189,6 +192,7 @@ struct Container
                 }
             }
             break;
+
         case ContainerType::Set:
             if (m_set.type == MemberType::Container)
             {
@@ -199,13 +203,14 @@ struct Container
                 }
             }
             break;
+
         case ContainerType::Map:
         {
             if (m_map.valueType == MemberType::Container)
             {
-                for (auto kv : m_map.elements)
+                for (auto it = m_map.elements.begin(); it != m_map.elements.end(); ++it)
                 {
-                    delete kv.second.m_container;
+                    delete it->second.m_container;
                 }
             }
         }
@@ -234,55 +239,66 @@ struct Container
     };
 };
 
-void CopyContainer(Container& dest, const Container& src)
-{
-    dest.m_containerType = src.m_containerType;
-    switch (dest.m_containerType)
-    {
-    case ContainerType::Array:
-        dest.m_array.type = src.m_array.type;
-        dest.m_array.elements = src.m_array.elements;
-        break;
-    case ContainerType::Set:
-        dest.m_set.type = src.m_set.type;
-        dest.m_set.elements = src.m_set.elements;
-        break;
-    case ContainerType::Map:
-        dest.m_map.keyType = src.m_map.keyType;
-        dest.m_map.valueType = src.m_map.valueType;
-        dest.m_map.elements = src.m_map.elements;
-        break;
-    }
-}
-
 struct Member
 {
+    Member() = default;
     Member(MemberType type)
     {
         m_type = type;
         switch (type)
         {
-        case MemberType::Boolean:
-            break;
-        case MemberType::Integer:
-            break;
-        case MemberType::Float:
-            break;
-        case MemberType::String:
-            break;
-        case MemberType::Class:
-            break;
-        case MemberType::Container:
-            break;
-        case MemberType::Object:
-            break;
-        default:
-            break;
+        case MemberType::Boolean: m_value.m_boolean = false; break;
+        case MemberType::Integer: m_value.m_integer = 0; break;
+        case MemberType::Float: m_value.m_float = 0.0f; break;
+        default: __fallthrough;
+        case MemberType::String: m_value.m_string = ""; break;
+        case MemberType::Class: m_value.m_class = Class::Object; break;
+        case MemberType::Container: m_value.m_container = new Container(); break; // Calls new
+        case MemberType::Object: m_value.m_object = { Class::Object, nullptr }; break;
         }
+    }
+    ~Member()
+    {
+        if (m_type == MemberType::Container)
+            delete m_value.m_container; // Calls delete
     }
     MemberType m_type;
     RawMember m_value;
 };
+
+// Returns false on error
+bool ArrayAdd(Container container, Member element)
+{
+    if (container.m_containerType != ContainerType::Array ||
+        element.m_type != container.m_array.type)
+        return false;
+
+    container.m_array.elements.push_back(element.m_value);
+    return true;
+}
+
+// Returns false on error
+bool SetInsert(Container container, Member element)
+{
+    if (container.m_containerType != ContainerType::Set ||
+        element.m_type != container.m_array.type)
+        return false;
+
+    container.m_set.elements.insert(element.m_value);
+    return true;
+}
+
+// Returns false on error
+bool MapInsert(Container container, Member key, Member value)
+{
+    if (container.m_containerType != ContainerType::Map ||
+        key.m_type != container.m_map.keyType ||
+        value.m_type != container.m_map.valueType)
+        return false;
+
+    container.m_map.elements.insert({ key.m_value, value.m_value });
+    return true;
+}
 
 // Like an internal name for members
 using MemberToken_t = std::string;
@@ -291,9 +307,13 @@ using MemberToken_t = std::string;
 struct PureMember
 {
     MemberToken_t m_token;
-    MemberType m_type;
-    MemberType m_containerType_key; // Use as "type" in non-map containers
-    MemberType m_containerType_value;
+    MemberType m_mType;
+    ContainerType m_cType;
+    union
+    {
+        MemberType m_cTypeU; // Unary
+        struct { MemberType key; MemberType value; } m_cTypeB; // Binary
+    };
 };
 std::unordered_map<Class, std::vector<PureMember>> g_classTemplate;
 
@@ -328,8 +348,34 @@ public:
         {
             for (PureMember member : g_classTemplate.find(ancestor)->second)
             {
-                RawMember value;
-                m_members.insert(member.m_token, Member{ member.m_type, value });
+                Member insertion;
+                if (member.m_mType == MemberType::Container)
+                {
+                    insertion.m_type = MemberType::Container;
+                    insertion.m_value.m_container = new Container;
+                    insertion.m_value.m_container->m_containerType = member.m_cType;
+                    switch (member.m_cType)
+                    {
+                    case ContainerType::Array:
+                        insertion.m_value.m_container->m_array.type = member.m_cTypeU;
+                        insertion.m_value.m_container->m_array.elements = {};
+                        break;
+                    case ContainerType::Set:
+                        insertion.m_value.m_container->m_set.type = member.m_cTypeU;
+                        insertion.m_value.m_container->m_set.elements = {};
+                        break;
+                    case ContainerType::Map:
+                        insertion.m_value.m_container->m_map.keyType = member.m_cTypeB.key;
+                        insertion.m_value.m_container->m_map.valueType = member.m_cTypeB.value;
+                        insertion.m_value.m_container->m_map.elements = {};
+                        break;
+                    }
+                }
+                else
+                {
+                    insertion = Member(member.m_mType);
+                }
+                m_members.insert({ member.m_token, insertion });
             }
         }
     }

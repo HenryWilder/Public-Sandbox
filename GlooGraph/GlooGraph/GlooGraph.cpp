@@ -80,6 +80,7 @@ enum class MemberType
     Object,
     String,
 };
+class Object;
 struct Container;
 struct RawMember
 {
@@ -253,8 +254,8 @@ struct Member
         default: __fallthrough;
         case MemberType::String: m_value.m_string = ""; break;
         case MemberType::Class: m_value.m_class = Class::Object; break;
-        case MemberType::Container: m_value.m_container = new Container(); break; // Calls new
-        case MemberType::Object: m_value.m_object = { Class::Object, nullptr }; break;
+        case MemberType::Container: break; // Handle this externally
+        case MemberType::Object: m_value.m_object.storableClass = Class::Object; m_value.m_object.referenece = nullptr; break;
         }
     }
     ~Member()
@@ -323,7 +324,6 @@ bool DoesInheritFromClass(Class check, Class ancestor)
     return it->second.find(ancestor) != it->second.end();
 }
 
-class Object;
 std::vector<Object*> g_world;
 
 class Object
@@ -346,36 +346,36 @@ public:
         m_members.reserve(spaceNeeded);
         for (Class ancestor : lineage)
         {
-            for (PureMember member : g_classTemplate.find(ancestor)->second)
+            for (PureMember memberTemplate : g_classTemplate.find(ancestor)->second)
             {
                 Member insertion;
-                if (member.m_mType == MemberType::Container)
+                if (memberTemplate.m_mType == MemberType::Container)
                 {
                     insertion.m_type = MemberType::Container;
                     insertion.m_value.m_container = new Container;
-                    insertion.m_value.m_container->m_containerType = member.m_cType;
-                    switch (member.m_cType)
+                    insertion.m_value.m_container->m_containerType = memberTemplate.m_cType;
+                    switch (memberTemplate.m_cType)
                     {
                     case ContainerType::Array:
-                        insertion.m_value.m_container->m_array.type = member.m_cTypeU;
+                        insertion.m_value.m_container->m_array.type = memberTemplate.m_cTypeU;
                         insertion.m_value.m_container->m_array.elements = {};
                         break;
                     case ContainerType::Set:
-                        insertion.m_value.m_container->m_set.type = member.m_cTypeU;
+                        insertion.m_value.m_container->m_set.type = memberTemplate.m_cTypeU;
                         insertion.m_value.m_container->m_set.elements = {};
                         break;
                     case ContainerType::Map:
-                        insertion.m_value.m_container->m_map.keyType = member.m_cTypeB.key;
-                        insertion.m_value.m_container->m_map.valueType = member.m_cTypeB.value;
+                        insertion.m_value.m_container->m_map.keyType = memberTemplate.m_cTypeB.key;
+                        insertion.m_value.m_container->m_map.valueType = memberTemplate.m_cTypeB.value;
                         insertion.m_value.m_container->m_map.elements = {};
                         break;
                     }
                 }
                 else
                 {
-                    insertion = Member(member.m_mType);
+                    insertion = Member(memberTemplate.m_mType);
                 }
-                m_members.insert({ member.m_token, insertion });
+                m_members.insert({ memberTemplate.m_token, insertion });
             }
         }
     }

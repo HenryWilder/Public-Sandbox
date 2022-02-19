@@ -65,8 +65,6 @@ enum class Class
 
 std::unordered_map<Class, std::unordered_set<Class>> g_inheritance;
 
-using MemberToken_t = size_t;
-
 enum class MemberType
 {
     Boolean,
@@ -77,14 +75,41 @@ enum class MemberType
     Container,
     Object,
 };
-struct MemberContainer;
-struct Member
+struct RawMember;
+enum class ContainerType
 {
-    MemberType m_memberType;
+    Array,
+    Set,
+    Map,
+};
+struct Container
+{
+    ContainerType m_containerType;
+    union
+    {
+        struct {
+            MemberType type;
+            std::vector<RawMember*> elements;
+        } m_array;
+
+        struct {
+            MemberType type;
+            std::unordered_set<RawMember*> elements;
+        } m_set;
+
+        struct {
+            MemberType keyType;
+            MemberType valueType;
+            std::unordered_map<RawMember*, RawMember*> elements;
+        } m_map;
+    };
+};
+struct RawMember
+{
     union
     {
         bool m_boolean;
-        int m_boolean;
+        int m_integer;
         float m_float;
         std::string m_string;
         Class m_class;
@@ -92,15 +117,24 @@ struct Member
         struct { Class storableClass; Object* referenece; } m_object;
     };
 };
-enum class ContainerType;
-struct Container
+struct Member
 {
-    ContainerType m_containerType;
-    union
-    {
-
-    };
+    MemberType m_type;
+    RawMember m_value;
 };
+
+// Like an internal name for members
+using MemberToken_t = std::string;
+
+// For templating members off of when spawning an object
+struct PureMember
+{
+    MemberToken_t m_token;
+    MemberType m_type;
+    MemberType m_containerType_key; // Use as "type" in non-map containers
+    MemberType m_containerType_value;
+};
+std::unordered_map<Class, std::vector<PureMember>> g_hierarchy;
 
 class Object
 {

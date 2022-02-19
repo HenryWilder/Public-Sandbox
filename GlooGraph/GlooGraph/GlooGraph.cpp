@@ -4,6 +4,8 @@
 #include <stack>
 #include <unordered_map>
 #include <unordered_set>
+#include <map>
+#include <set>
 #include <fstream>
 
 struct Vector3
@@ -68,15 +70,34 @@ std::unordered_map<Class, std::unordered_set<Class> /* ancestors, not children *
 
 enum class MemberType
 {
+    // Ordered by size
     Boolean,
+    Byte,
     Integer,
     Float,
-    String,
     Class,
     Container,
     Object,
+    String,
 };
-struct RawMember;
+struct Container;
+struct RawMember
+{
+    RawMember() { m_string = ""; }
+    RawMember(const RawMember& other) { this->m_string = other.m_string; }
+    RawMember& operator=(const RawMember& other) { this->m_string = other.m_string; }
+    union
+    {
+        bool m_boolean;
+        char m_byte;
+        int m_integer;
+        float m_float;
+        Class m_class;
+        Container* m_container; // MUST be handled by wrappers!!
+        struct { Class storableClass; Object* referenece; } m_object;
+        std::string m_string;
+    };
+};
 enum class ContainerType
 {
     Array,
@@ -113,6 +134,28 @@ struct Container
             break;
         }
     }
+    // Copies the template, not the stored elements
+    Container& operator=(const Container& containerTemplate)
+    {
+        m_containerType = containerTemplate.m_containerType;
+        switch (m_containerType)
+        {
+        case ContainerType::Array:
+            m_array.type = containerTemplate.m_array.type;
+            m_array.elements = {};
+            break;
+        case ContainerType::Set:
+            m_set.type = containerTemplate.m_set.type;
+            m_set.elements = {};
+            break;
+        case ContainerType::Map:
+            m_map.keyType = containerTemplate.m_map.keyType;
+            m_map.valueType = containerTemplate.m_map.valueType;
+            m_map.elements = {};
+            break;
+        }
+        return *this;
+    }
     Container(ContainerType container, MemberType typeK, MemberType typeV = (MemberType)0)
     {
         m_containerType = container;
@@ -133,25 +176,60 @@ struct Container
             break;
         }
     }
-    ~Container() = default;
+    ~Container()
+    {
+        switch (m_containerType)
+        {
+        case ContainerType::Array:
+            if (m_array.type == MemberType::Container)
+            {
+                for (size_t i = 0; i < m_array.elements.size(); ++i)
+                {
+                    delete m_array.elements[i].m_container;
+                }
+            }
+            break;
+        case ContainerType::Set:
+            if (m_set.type == MemberType::Container)
+            {
+                std::vector<RawMember> elements(m_set.elements.begin(), m_set.elements.end());
+                for (size_t i = 0; i < elements.size(); ++i)
+                {
+                    delete elements[i].m_container;
+                }
+            }
+            break;
+        case ContainerType::Map:
+        {
+            if (m_map.valueType == MemberType::Container)
+            {
+                for (auto kv : m_map.elements)
+                {
+                    delete kv.second.m_container;
+                }
+            }
+        }
+            break;
+        }
+    }
 
     ContainerType m_containerType;
     union
     {
         struct {
             MemberType type;
-            std::vector<RawMember*> elements;
+            std::vector<RawMember> elements;
         } m_array;
 
         struct {
             MemberType type;
-            std::unordered_set<RawMember*> elements;
+            std::set<RawMember> elements;
         } m_set;
 
         struct {
-            MemberType keyType;
+            MemberType keyType; // Key type is NOT ALLOWED to be a container, due to containers being *pointers* and not the sum of their elements!!
             MemberType valueType;
-            std::unordered_map<RawMember*, RawMember*> elements;
+            std::map<RawMember, RawMember> elements;
         } m_map;
     };
 };
@@ -177,19 +255,6 @@ void CopyContainer(Container& dest, const Container& src)
     }
 }
 
-struct RawMember
-{
-    union
-    {
-        bool m_boolean;
-        int m_integer;
-        float m_float;
-        std::string m_string;
-        Class m_class;
-        Container m_container;
-        struct { Class storableClass; Object* referenece; } m_object;
-    };
-};
 struct Member
 {
     Member(MemberType type)

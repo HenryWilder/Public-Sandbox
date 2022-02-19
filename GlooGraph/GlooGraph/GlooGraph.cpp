@@ -1,10 +1,18 @@
 #include <algorithm>
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
 #include <fstream>
 
 struct Vector3
 {
     float x, y, z;
 };
+constexpr Vector3 Vector3Zero()
+{
+    return { 0,0,0 };
+}
 
 Vector3 Vector3Add(Vector3 a, Vector3 b)
 {
@@ -47,31 +55,77 @@ struct Transform
     Vector3 scale;
 };
 
-class Actor
+enum class Class
 {
-    Transform transform;
+    Object,
+    Actor,
+    GlooProjectile,
+    Gloo,
 };
 
-// This is the only one I'm programming because Unreal already gives you the others for free -3-
-struct SphereCollider
+std::unordered_map<Class, std::unordered_set<Class>> g_inheritance;
+
+using MemberToken_t = size_t;
+
+enum class MemberType
 {
-    Vector3 center;
-    float radius;
+    Boolean,
+    Integer,
+    Float,
+    String,
+    Class,
+    Container,
+    Object,
 };
-bool CheckCollisionSpheres(const SphereCollider& check, const SphereCollider& against)
+struct MemberContainer;
+struct Member
 {
-    if (check.center)
+    MemberType m_memberType;
+    union
+    {
+        bool m_boolean;
+        int m_boolean;
+        float m_float;
+        std::string m_string;
+        Class m_class;
+        Container m_container;
+        struct { Class storableClass; Object* referenece; } m_object;
+    };
+};
+enum class ContainerType;
+struct Container
+{
+    ContainerType m_containerType;
+    union
+    {
+
+    };
+};
+
+class Object
+{
+private:
+    Class m_class;
+    std::unordered_map<MemberToken_t, Member> m_members;
+
+public:
+    bool HasClassInheritance(Class with) const
+    {
+
+    }
+    Class GetClass() const
+    {
+        return m_class;
+    }
+
+    friend Object* Spawn(Class what, Transform where);
+};
+std::vector<Object*> g_world;
+Object* Spawn(Class what, Transform where)
+{
+    Object* object = new Object;
+    g_world.push_back();
 }
-
-class GlooProjectile : public Actor
-{
-    Vector3 velocity;
-};
-
-class Gloo : public Actor
-{
-    Actor* parent;
-};
 
 int main()
 {

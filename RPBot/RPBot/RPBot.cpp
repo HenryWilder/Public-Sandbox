@@ -12,7 +12,7 @@ enum class Tone
     Intrigued,
     Flirty,
     Mischief,
-    Surprised,
+    Surprised, // Also curious
     Sad,
     Mad, // Also disappointed
     Worried, // Also apologetic
@@ -30,7 +30,7 @@ std::map<Tone, std::vector<std::vector<std::string>>> g_emotes =
     { Tone::Flirty, { { "uwo", "owu", ";3", ";>" }, { ">;3", ">;>" }, { "UwU" } } },
     { Tone::Mischief, { { "uwu" }, { ">:3", ">:)" }, { "UWU", "OWO" } } },
 
-    { Tone::Surprised, { { ":o" }, { ":O", ":0" }, { "o.o" }, { "o.0", "0.o", "0.0" }, { "@-@", "@.@" } } },
+    { Tone::Surprised, { { ":o", ".o." }, { ":O", ":0", ".O." }, { "o.o" }, { "o.0", "0.o", "0.0" }, { "@-@", "@.@" } } },
     { Tone::Sad, { { ":<", ":c" }, { ":'c" }, { ";w;" }, { "qwq" } } },
     { Tone::Mad, { { "-3-" }, { "-3-\"", "-3-;" }, { "-.-", "-_-", "-~-" }, { "-.-\"", "-.-;", "-~-\"", "-~-;" }, { ">:T", ">:|", ">:/" }, { ">:<", ">:c" }, { ">:C" }, { ">:'c" }, { ">:'C" } } },
 
@@ -58,12 +58,38 @@ enum class POS
     Adverb,
     Adjective,
     Conjunction,
+    Article,
 };
+std::ostream& operator<<(std::ostream& stream, const POS& pos)
+{
+    switch (pos)
+    {
+    case POS::Noun:         return stream << "noun";
+    case POS::Pronoun:      return stream << "pronoun";
+    case POS::Verb_Action:  return stream << "action verb";
+    case POS::Verb_Helping: return stream << "helping verb";
+    case POS::Verb_Linking: return stream << "linking verb";
+    case POS::Adverb:       return stream << "adverb";
+    case POS::Adjective:    return stream << "adjective";
+    case POS::Conjunction:  return stream << "conjunction";
+    case POS::Article:      return stream << "article";
+    }
+}
+std::istream& operator>>(std::istream& stream, POS& pos)
+{
+    std::string input;
+    stream >> input;
+    if (input == "noun") pos = POS::Noun;
+    else if (input == "pronoun") pos = POS::Pronoun;
+    else if (input == "verb") pos = POS::Verb_Action;
+    else if (input == "action") { stream >> input; pos = POS::Verb_Action; }
+    else if (input == "verb") pos = POS::Verb_Action;
+    return stream;
+}
 struct Word
 {
     std::string word;
-
-    std::map<Word*, float> synonyms;
+    POS partOfSpeach;
 };
 std::ostream& operator<<(std::ostream& stream, const Word& word)
 {
@@ -81,12 +107,15 @@ std::vector<Word*> g_vocab =
 
 int main()
 {
-    std::cout << "Hello! I am a bot! I am still learning English, so I'm sorry if I have trouble understanding! " << Emote(Tone::Worried, 0.0f) << "\n";
-    std::cout << "Teach me a new word?\n";
+    std::cout
+        << "Hello! I am a bot! " << Emote(Tone::Happy, 0.5f) << '\n'
+        << "I am still learning English, so I'm sorry if I have trouble understanding! " << Emote(Tone::Worried, 0.0f) << '\n'
+        << "Teach me a new word? " << Emote(Tone::Happy, 0.0f) << '\n';
     g_vocab.push_back(new Word);
     std::cin >> *g_vocab.back();
 
-    std::cout << "What part of speach (noun, pronoun, verb, etc.) is \"" << *g_vocab.back() << "\"?\n";
+    std::cout << "What part of speach (noun, pronoun, verb, etc.) is \"" << *g_vocab.back() << "\"? " << Emote(Tone::Surprised, 0.0f) << '\n';
+    std::cin >> g_vocab.back()->partOfSpeach;
 
     for (Word* word : g_vocab)
     {

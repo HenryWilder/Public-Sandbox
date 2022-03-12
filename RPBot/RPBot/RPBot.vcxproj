@@ -139,7 +139,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Parse.cpp" />
     <ClCompile Include="RPBot.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="vocab" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Parse.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

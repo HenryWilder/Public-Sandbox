@@ -3,6 +3,8 @@
 #include <map>
 #include <array>
 #include <string>
+#include <sstream>
+#include "Parse.h"
 
 enum class Tone
 {
@@ -114,31 +116,24 @@ std::ostream& operator<<(std::ostream& stream, const Word& word)
     return stream << word;
 }
 
-
-
 void ReadWord(const std::string& word)
 {
-
+    std::cout << word;
 }
-void ReadSentence(const std::string& sentence)
-{
 
+void GenerateSentence()
+{
+    std::string output;
 }
 
 int main()
 {
-    std::cout
-        << "Hello! I am a bot! " << Emote(Tone::Happy, 0.5f) << '\n'
-        << "I am still learning English, so I'm sorry if I have trouble understanding! " << Emote(Tone::Worried, 0.0f) << '\n'
-        << "Teach me a new word? " << Emote(Tone::Happy, 0.0f) << '\n';
-    g_vocab.push_back(new Word);
-    std::cin >> *g_vocab.back();
-
-    std::cout << "What part of speach (noun, pronoun, verb, etc.) is \"" << *g_vocab.back() << "\"? " << Emote(Tone::Surprised, 0.0f) << '\n';
-    std::cin >> g_vocab.back()->partOfSpeach;
-
-    for (Word* word : g_vocab)
-    {
-        delete word;
-    }
+    Load("vocab");
+    return 0;
+    std::string input;
+    std::getline(std::cin, input, '\n');
+    std::istringstream line(input);
+    std::string word;
+    line >> word;
+    ReadWord(word);
 }

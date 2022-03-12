@@ -398,7 +398,7 @@ int main()
     //std::cout << "\x1b]2;Console Chess 3.0\x07"; // Renames the window
     //std::cout << "\x1b[?25l"; // Hide the cursor
 
-    HWND hWnd = GetConsoleWindow();
+    HWND hWnd = GetDesktopWindow();
     g_hdc = GetDC(hWnd);
 
     // Dunno how this works but it was in CChess2 and when I added it, the cursor selection issue (highlighting text) that was bugging me so much went away.

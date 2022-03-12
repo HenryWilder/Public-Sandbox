@@ -129,6 +129,8 @@ void GenerateSentence()
 int main()
 {
     Load("vocab");
+    Save("vocab");
+    Unload();
     return 0;
     std::string input;
     std::getline(std::cin, input, '\n');

@@ -3,25 +3,27 @@
 #include <vector>
 #include <map>
 
-struct CustomTone
+struct FileTone
 {
 	std::string tag;
 };
-extern std::vector<CustomTone*> g_tones;
+extern std::vector<FileTone*> g_tones;
 
-struct Use
+struct FilePOS
 {
 	std::string tag;
 };
-extern std::vector<Use*> g_uses;
+extern std::vector<FilePOS*> g_partsOfSpeach;
 
 struct FileWord
 {
 	std::string text;
-	std::vector<CustomTone*> tones;
-	std::vector<Use*> uses;
+	std::vector<FileTone*> tones;
+	std::vector<FilePOS*> partsOfSpeach;
 	std::vector<FileWord*> synonyms;
 };
 extern std::map<std::string, FileWord*> g_words;
 
 void Load(const char* filename);
+void Save(const char* filename);
+void Unload();

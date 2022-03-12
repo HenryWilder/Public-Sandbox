@@ -88,22 +88,42 @@ std::istream& operator>>(std::istream& stream, POS& pos)
 }
 struct Word
 {
-    std::string word;
     POS partOfSpeach;
+
+    operator std::string() const;
 };
+std::map<std::string, Word*> g_vocab_read;
+std::map<const Word*, std::string> g_vocab_gen;
+Word::operator std::string() const
+{
+    return g_vocab_gen.find(this)->second;
+}
+
+// Calls new if needed
+void CreateNewWord(std::string word)
+{
+    if (g_vocab_read.find(word) != g_vocab_read.end())
+        return;
+    Word* ptr = new Word;
+    g_vocab_read[word] = ptr;
+    g_vocab_gen[ptr] = word;
+}
+
 std::ostream& operator<<(std::ostream& stream, const Word& word)
 {
-    return stream << word.word;
-}
-std::istream& operator>>(std::istream& stream, Word& word)
-{
-    return stream >> word.word;
+    return stream << word;
 }
 
-std::vector<Word*> g_vocab =
+
+
+void ReadWord(const std::string& word)
 {
 
-};
+}
+void ReadSentence(const std::string& sentence)
+{
+
+}
 
 int main()
 {

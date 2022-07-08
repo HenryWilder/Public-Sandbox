@@ -9,7 +9,7 @@ _(Italicized projects have been planned but not yet started in this repository)_
 - ### _Connectable_
   A barebones system for creating wire-pin-node connection systems like those used in Unreal Engine Blueprints, Unity Shader Graphs, Substance Designer Graphs, and so on. I realize this is a groundwork that has been made many times before, but I just like making things to see if I can figure out how they work.
   
-- ### _Language Builder_
+- ### Language Builder
   Languages are made of small units called phonemes. Phonemes are combined using language-specific rules. Computers are very good at following rules. Instead of generating meaningless jumbles of letters, this program strives to produce rule-abiding words that, while in no existing dictionary, could very much be pronounced and given meaning.
   
   Potentially, I'd like to see if this program could be made to produce almost-coherant sentences using entirely made-up words which are attributed internal meanings and context rules. Maybe it could be used for creating alien conversations...
